@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Parallax 2026 — Control de Acceso</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #080D18;
+  --ink2: #0D1525;
+  --ink3: #152035;
+  --gold: #C8952A;
+  --gold2: #E8B84B;
+  --gold3: rgba(200,149,42,0.15);
+  --silver: #7A8FAA;
+  --cream: #E8E2D8;
+  --white: #F4F0EA;
+  --c2d: #5B8FE8;
+  --c2d-bg: rgba(91,143,232,0.1);
+  --c3d: #3DBFA0;
+  --c3d-bg: rgba(61,191,160,0.1);
+  --ok: #2ECC71;
+  --warn: #F39C12;
+  --full: #E74C3C;
+  --ok-bg: rgba(46,204,113,0.12);
+  --warn-bg: rgba(243,156,18,0.12);
+  --full-bg: rgba(231,76,60,0.12);
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(200,149,42,0.2);
+  --mono: 'DM Mono', monospace;
+  --display: 'Syne', sans-serif;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; background: var(--ink); color: var(--cream); font-family: var(--mono); overflow-x: hidden; }
+
+/* ── APP SHELL ── */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; height: 52px;
+  background: var(--ink2);
+  border-bottom: 0.5px solid var(--border2);
+  flex-shrink: 0; gap: 12px;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.brand-name { font-family: var(--display); font-size: 15px; font-weight: 700; letter-spacing: 2px; color: var(--gold2); }
+.brand-sub { font-size: 9px; letter-spacing: 2px; color: var(--silver); text-transform: uppercase; display: none; }
+@media(min-width:480px){ .brand-sub { display: block; } }
+.topbar-center { display: flex; gap: 4px; }
+.view-btn {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 5px 12px; background: transparent; border: 0.5px solid var(--border);
+  color: var(--silver); cursor: pointer; border-radius: var(--radius-sm);
+  transition: all .15s;
+}
+.view-btn.active { background: var(--gold3); border-color: var(--border2); color: var(--gold2); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.sync-pill {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 20px;
+  border: 0.5px solid rgba(46,204,113,0.3);
+  color: var(--ok); background: rgba(46,204,113,0.08);
+}
+.sync-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); animation: blink 1.8s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+.last-sync { font-size: 9px; color: var(--silver); letter-spacing: .5px; }
+
+/* ── VIEWS ── */
+.view { display: none; flex: 1; overflow-y: auto; }
+.view.active { display: flex; flex-direction: column; }
+
+/* ── DASHBOARD VIEW ── */
+.dash-header { padding: 16px 20px 12px; }
+.dash-title { font-family: var(--display); font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--silver); margin-bottom: 14px; }
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.kpi { background: var(--ink2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.kpi-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--silver); margin-bottom: 6px; }
+.kpi-val { font-family: var(--display); font-size: 26px; font-weight: 700; color: var(--white); line-height: 1; }
+.kpi-val.gold { color: var(--gold2); }
+.kpi-sub { font-size: 10px; color: var(--silver); margin-top: 3px; }
+
+/* filter bar */
+.filter-bar { display: flex; gap: 8px; padding: 0 20px 12px; flex-wrap: wrap; align-items: center; }
+.filter-btn {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 5px 12px; background: transparent; border: 0.5px solid var(--border);
+  color: var(--silver); cursor: pointer; border-radius: 20px; transition: all .15s;
+}
+.filter-btn.active { color: var(--white); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
+.filter-btn.f-2d.active { color: var(--c2d); border-color: rgba(91,143,232,0.4); background: var(--c2d-bg); }
+.filter-btn.f-3d.active { color: var(--c3d); border-color: rgba(61,191,160,0.4); background: var(--c3d-bg); }
+.search-input {
+  flex: 1; min-width: 120px; font-family: var(--mono); font-size: 11px;
+  padding: 5px 10px; background: var(--ink2); border: 0.5px solid var(--border);
+  color: var(--cream); border-radius: var(--radius-sm); outline: none;
+}
+.search-input::placeholder { color: var(--silver); }
+
+/* grid */
+.film-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; padding: 0 20px 80px; }
+
+/* film card */
+.film-card {
+  background: var(--ink2); border: 0.5px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; cursor: pointer;
+  transition: border-color .2s, transform .1s;
+  position: relative;
+}
+.film-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+.film-card.status-warn { border-color: rgba(243,156,18,0.3); }
+.film-card.status-full { border-color: rgba(231,76,60,0.4); }
+
+.card-accent { height: 2px; }
+.accent-2d { background: var(--c2d); }
+.accent-3d { background: var(--c3d); }
+
+.card-body { padding: 14px 16px; }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 8px; }
+.card-bloque-tag { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
+.tag-2d { background: var(--c2d-bg); color: var(--c2d); border: 0.5px solid rgba(91,143,232,0.25); }
+.tag-3d { background: var(--c3d-bg); color: var(--c3d); border: 0.5px solid rgba(61,191,160,0.25); }
+.status-badge { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
+.s-ok   { background: var(--ok-bg);   color: var(--ok);   border: 0.5px solid rgba(46,204,113,0.25); }
+.s-warn { background: var(--warn-bg); color: var(--warn); border: 0.5px solid rgba(243,156,18,0.25); }
+.s-full { background: var(--full-bg); color: var(--full); border: 0.5px solid rgba(231,76,60,0.25); }
+
+.card-title { font-family: var(--display); font-size: 15px; font-weight: 600; color: var(--white); margin-bottom: 4px; line-height: 1.3; }
+.card-alumnos { font-size: 10px; color: var(--silver); margin-bottom: 12px; line-height: 1.5; }
+
+/* capacity ring + bar */
+.cap-section { margin-bottom: 10px; }
+.cap-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.cap-nums { font-family: var(--display); font-size: 22px; font-weight: 700; line-height: 1; }
+.cap-nums .used { color: var(--white); }
+.cap-nums .sep { color: var(--silver); font-size: 16px; margin: 0 2px; }
+.cap-nums .total { color: var(--silver); font-size: 16px; }
+.cap-avail { text-align: right; }
+.cap-avail-num { font-family: var(--display); font-size: 18px; font-weight: 700; }
+.cap-avail-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--silver); display: block; }
+.pct-bar { height: 5px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
+.pct-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+.fill-ok   { background: var(--ok); }
+.fill-warn { background: var(--warn); }
+.fill-full { background: var(--full); }
+
+/* quick-reg button on card */
+.card-btn {
+  width: 100%; font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 8px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: all .15s; border: 0.5px solid;
+  margin-top: 4px;
+}
+.btn-reg { background: var(--gold3); border-color: var(--border2); color: var(--gold2); }
+.btn-reg:hover { background: rgba(200,149,42,0.25); }
+.btn-full { background: var(--full-bg); border-color: rgba(231,76,60,0.3); color: var(--full); cursor: not-allowed; }
+.btn-undo { background: rgba(255,255,255,0.04); border-color: var(--border); color: var(--silver); margin-top: 4px; }
+.btn-undo:hover { background: rgba(255,255,255,0.08); }
+
+/* ── CHECKIN VIEW ── */
+.checkin-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 16px 20px 80px; max-width: 500px; margin: 0 auto; width: 100%; }
+.checkin-title { font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+.checkin-sub { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--silver); margin-bottom: 20px; }
+
+.select-film-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--silver); margin-bottom: 8px; width: 100%; }
+.film-select {
+  width: 100%; font-family: var(--mono); font-size: 13px;
+  padding: 10px 14px; background: var(--ink2); border: 0.5px solid var(--border2);
+  color: var(--cream); border-radius: var(--radius); outline: none; cursor: pointer;
+  margin-bottom: 14px;
+}
+.film-select option { background: var(--ink2); }
+
+/* selected film info panel */
+.film-info-panel {
+  width: 100%; background: var(--ink2); border: 0.5px solid var(--border2);
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px;
+  display: none;
+}
+.film-info-panel.visible { display: block; }
+.fip-title { font-family: var(--display); font-size: 17px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+.fip-alumnos { font-size: 11px; color: var(--silver); margin-bottom: 12px; line-height: 1.6; }
+.fip-cap { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
+.fip-big { font-family: var(--display); font-size: 32px; font-weight: 800; line-height: 1; }
+.fip-big.ok   { color: var(--ok); }
+.fip-big.warn { color: var(--warn); }
+.fip-big.full { color: var(--full); }
+.fip-cap-info { flex: 1; }
+.fip-cap-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--silver); margin-bottom: 2px; }
+.fip-cap-detail { font-size: 12px; color: var(--cream); }
+.fip-bar-track { height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+.fip-bar-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+
+/* qty selector */
+.qty-row { display: flex; align-items: center; gap: 12px; width: 100%; margin-bottom: 14px; }
+.qty-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--silver); flex: 1; }
+.qty-ctrl { display: flex; align-items: center; gap: 0; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); overflow: hidden; }
+.qty-btn {
+  width: 36px; height: 36px; background: transparent; border: none;
+  font-family: var(--display); font-size: 18px; font-weight: 600;
+  color: var(--gold2); cursor: pointer; transition: background .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.qty-btn:hover { background: var(--gold3); }
+.qty-val { width: 44px; text-align: center; font-family: var(--display); font-size: 18px; font-weight: 700; color: var(--white); }
+
+/* big register button */
+.reg-btn {
+  width: 100%; font-family: var(--display); font-size: 14px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  padding: 14px; border-radius: var(--radius); cursor: pointer;
+  background: var(--gold); border: none; color: var(--ink);
+  transition: opacity .15s, transform .1s;
+}
+.reg-btn:active { transform: scale(0.98); }
+.reg-btn:disabled { opacity: .4; cursor: not-allowed; }
+.reg-btn.full-btn { background: var(--full-bg); color: var(--full); border: 0.5px solid rgba(231,76,60,0.4); }
+
+/* feedback toast */
+.toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--ok); color: var(--ink); font-family: var(--display);
+  font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  padding: 10px 24px; border-radius: var(--radius);
+  opacity: 0; transition: opacity .2s, transform .2s; z-index: 200;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.err { background: var(--full); color: white; }
+
+/* ── LOG VIEW ── */
+.log-wrap { flex: 1; padding: 16px 20px 80px; max-width: 600px; margin: 0 auto; width: 100%; }
+.log-title { font-family: var(--display); font-size: 18px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+.log-sub { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--silver); margin-bottom: 16px; }
+.log-controls { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+.log-clear { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 5px 12px; background: var(--full-bg); border: 0.5px solid rgba(231,76,60,0.3); color: var(--full); cursor: pointer; border-radius: var(--radius-sm); }
+.log-count { font-size: 10px; color: var(--silver); }
+.log-entry {
+  display: grid; grid-template-columns: 60px 1fr auto;
+  gap: 0 12px; padding: 10px 12px;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 12px; align-items: start;
+}
+.log-entry:last-child { border-bottom: none; }
+.log-time { color: var(--gold); font-size: 11px; padding-top: 1px; }
+.log-film { color: var(--white); font-weight: 500; margin-bottom: 2px; }
+.log-detail { color: var(--silver); font-size: 11px; }
+.log-qty { font-family: var(--display); font-size: 16px; font-weight: 700; }
+.log-qty.pos { color: var(--ok); }
+.log-qty.neg { color: var(--full); }
+.log-empty { color: var(--silver); font-size: 12px; padding: 24px 0; text-align: center; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--ink2); border-top: 0.5px solid var(--border2);
+  display: flex; z-index: 100;
+}
+.nav-btn {
+  flex: 1; padding: 10px 0 12px; background: none; border: none;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; color: var(--silver); transition: color .15s;
+}
+.nav-btn.active { color: var(--gold2); }
+.nav-icon { font-size: 18px; }
+.nav-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:480px){
+  .kpi-row { grid-template-columns: repeat(2,1fr); }
+  .film-grid { grid-template-columns: 1fr; }
+}
+@media(min-width:768px){
+  .bottom-nav { display: none; }
+  .topbar-center { display: flex; }
+}
+@media(max-width:767px){
+  .topbar-center { display: none; }
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="brand-name">PARALLAX</div>
+      <div class="brand-sub">Control de Acceso</div>
+    </div>
+    <div class="topbar-center">
+      <button class="view-btn active" onclick="switchView('dashboard')">Dashboard</button>
+      <button class="view-btn" onclick="switchView('checkin')">Check-in</button>
+      <button class="view-btn" onclick="switchView('log')">Registro</button>
+    </div>
+    <div class="topbar-right">
+      <div class="sync-pill"><div class="sync-dot"></div><span id="sync-label">En vivo</span></div>
+      <div class="last-sync" id="last-sync-time"></div>
+    </div>
+  </div>
+
+  <!-- ── DASHBOARD ── -->
+  <div class="view active" id="view-dashboard">
+    <div class="dash-header">
+      <div class="dash-title">Estado del evento · 22 mayo 2026</div>
+      <div class="kpi-row" id="kpi-row"></div>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="setFilter('all',this)">Todos</button>
+      <button class="filter-btn f-2d" onclick="setFilter('2D',this)">2D</button>
+      <button class="filter-btn f-3d" onclick="setFilter('3D',this)">3D</button>
+      <input class="search-input" type="text" placeholder="Buscar corto o alumno..." oninput="setSearch(this.value)" id="search-box">
+    </div>
+    <div class="film-grid" id="film-grid"></div>
+  </div>
+
+  <!-- ── CHECK-IN ── -->
+  <div class="view" id="view-checkin">
+    <div class="checkin-wrap">
+      <div class="checkin-title">Check-in</div>
+      <div class="checkin-sub">Registro de entrada · Parallax 2026</div>
+
+      <div class="select-film-label">Seleccionar cortometraje</div>
+      <select class="film-select" id="film-select" onchange="onFilmSelect()">
+        <option value="">— Selecciona un corto —</option>
+      </select>
+
+      <div class="film-info-panel" id="film-info-panel">
+        <div class="fip-title" id="fip-title"></div>
+        <div class="fip-alumnos" id="fip-alumnos"></div>
+        <div class="fip-cap">
+          <div>
+            <div class="fip-cap-label">Disponible</div>
+            <div class="fip-big" id="fip-avail">—</div>
+          </div>
+          <div class="fip-cap-info">
+            <div class="fip-cap-label">Ocupación</div>
+            <div class="fip-cap-detail" id="fip-detail">—</div>
+            <div class="fip-bar-track"><div class="fip-bar-fill" id="fip-bar"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="qty-row" id="qty-row" style="display:none">
+        <div class="qty-label">Personas a registrar</div>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="changeQty(-1)">−</button>
+          <div class="qty-val" id="qty-val">1</div>
+          <button class="qty-btn" onclick="changeQty(1)">+</button>
+        </div>
+      </div>
+
+      <button class="reg-btn" id="main-reg-btn" onclick="doCheckin()" disabled>Selecciona un corto</button>
+      <button class="btn-undo" style="width:100%;margin-top:8px;padding:8px;border-radius:var(--radius-sm);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;background:rgba(255,255,255,0.04);border:0.5px solid var(--border);color:var(--silver);cursor:pointer" onclick="doUndo()">↩ Deshacer última entrada</button>
+    </div>
+  </div>
+
+  <!-- ── LOG ── -->
+  <div class="view" id="view-log">
+    <div class="log-wrap">
+      <div class="log-title">Registro de entradas</div>
+      <div class="log-sub">Historial en tiempo real</div>
+      <div class="log-controls">
+        <button class="log-clear" onclick="clearLog()">Limpiar registro</button>
+        <span class="log-count" id="log-count">0 entradas</span>
+      </div>
+      <div id="log-entries"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV (mobile) -->
+<div class="bottom-nav">
+  <button class="nav-btn active" onclick="switchView('dashboard')" id="nav-dashboard">
+    <span class="nav-icon">⊞</span>
+    <span class="nav-label">Dashboard</span>
+  </button>
+  <button class="nav-btn" onclick="switchView('checkin')" id="nav-checkin">
+    <span class="nav-icon">✓</span>
+    <span class="nav-label">Check-in</span>
+  </button>
+  <button class="nav-btn" onclick="switchView('log')" id="nav-log">
+    <span class="nav-icon">≡</span>
+    <span class="nav-label">Registro</span>
+  </button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   DATA — Films with capacity & students
+   Capacidad por corto = alumnos del corto + sus invitados + proporción VIP
+   VIP (50) se distribuyen: 29 en 2D (proportional) + 21 en 3D
+   Fórmula: cap_corto ≈ alumnos_corto * (1 + avg_invitados_por_alumno) + cuota_vip
+   Usamos capacidad REAL calculada: aforo total bloque / num_cortos (simplificado operativamente)
+   Para máxima utilidad práctica, asignamos por alumno su numero real de invitados + cuota VIP proporcional
+   ══════════════════════════════════════════════════ */
+
+const FILMS_RAW = [
+  { id:'afterlight', title:'Afterlight', bloque:'2D',
+    alumnos:['Lorena Santos Morales','Carmen Victoria Mora Cova','Carol Treviño Henric','Luana Montaña Martínez','María F. Márquez Oyervides','Ana Sofía Ibarra','Daniela Meléndez Garcia','Vanessa Cárdenas Torres','Gabriela Reyna Navar','Sofía Vázquez Vigil','Lorena Yañez Lara','Ximena Gómez Orta','Maria Echeagaray Garcia','Ian Aguilar Rodríguez','Alonso de León Margain'],
+    invitados: 58 },
+  { id:'battle', title:'Battle of the Batter', bloque:'2D',
+    alumnos:['Xenia Muñiz','Natalia Sofía Ríos Garza','Nadia Victoria Espinosa Tenorio','Michelle Aseret Díaz Sánchez','Caleb Ilan Martínez Ardila'],
+    invitados: 35 },
+  { id:'beatbox', title:'Beatbox', bloque:'2D',
+    alumnos:['Isaac Alejandro Arredondo Neri','Carla Roberta Gil Tinoco','Jesús Maximiliano Soto Gamboa','Raúl Torres Camarillo','Javier de la Garza Treviño','Isaac Boone Patlán'],
+    invitados: 30 },
+  { id:'flama', title:'Flama', bloque:'2D',
+    alumnos:['Ángel Emillio Martínez Bedia','Valeria Rodriguez Pariente','Ana Fernanda Llano Muñoz','Guillermo Enriquez Ibave','Miranda Garcia Rodriguez'],
+    invitados: 31 },
+  { id:'freshtzu', title:'Freshtzu', bloque:'2D',
+    alumnos:['Maryanna Márquez García','Valentina Deandar Tamez','Alan Gabriel Caballero Lozano','Annayram Márquez'],
+    invitados: 21 },
+  { id:'malita', title:"Malita Pa' Ti", bloque:'2D',
+    alumnos:['Emilia Galván López','Mia Regina Medrano Cruz','Zaira Fatima Garduño Herrera','Gael Antonio Dominguez Huerta','Constanza Abril Medrano Cruz','Leslie Yazmín Guevara Tolentino'],
+    invitados: 32 },
+  { id:'otterside', title:'Otterside', bloque:'2D',
+    alumnos:['Raul Maldonado','Emiliano Martínez Alanis','Luis Fernando Lozano Cantú','Oswaldo Andres Silvas Alcaraz','Samantha Cantú Morales','Jorge Gómez Sánchez','Carlos Andres Suarez Delgado'],
+    invitados: 37 },
+  { id:'ronnie', title:'Ronnie en la Luna', bloque:'2D',
+    alumnos:['Alessa Romo del Villar','Andrés Rosiles Maldonado','Victoria Nohemi Peña Ceseña','Valeria Zertuche','Carlos Alonso Serroque Palacios','Juan Pablo Martínez Leal','Daniel García Díaz'],
+    invitados: 29 },
+  { id:'blockhead', title:'Blockhead', bloque:'3D',
+    alumnos:['Fernando Manuel Cárdenas Segura'],
+    invitados: 5 },
+  { id:'contact', title:'Contact', bloque:'3D',
+    alumnos:['Gonzalo Ramos Ochoa'],
+    invitados: 5 },
+  { id:'escamas', title:'Escamas', bloque:'3D',
+    alumnos:['Julieta Hernández Sada','Jessica Isabel Córdova García','Sofía Téllez Brito','Andrea Zamarripa Treviño','Andrea Ortegón González','Raul Carrillo','Jorge Urencio'],
+    invitados: 50 },
+  { id:'ineedspace', title:'I Need Some Space', bloque:'3D',
+    alumnos:['Angela Abigail Aguirre Landin','Mariana Cordova Ramirez','Luisa Fernanda Treviño Montemayor','Serydia Yuleth Cortez Cedillo'],
+    invitados: 18 },
+  { id:'lonestar', title:'Lone Star Store', bloque:'3D',
+    alumnos:['Carlos Emiliano García Horta','María Fernanda Casillas Chávez','Elizabeth Abigail Aguirre'],
+    invitados: 13 },
+  { id:'recuerda', title:'Recuerda que te amo', bloque:'3D',
+    alumnos:['Isabella Guadalupe Puente Cantú','Emma Carolina Saucedo García','Lesly Gómez González','Ana Carolina Velázquez Reyna','Carlos Aarón Cantú González'],
+    invitados: 31 },
+  { id:'rex', title:'Rex', bloque:'3D',
+    alumnos:['Ángel Iván Torres Arévalo','Emilio Garcia Cabral','Mariano Emmanuel Mosqueda Garza'],
+    invitados: 14 },
+  { id:'ungiro', title:'Un giro en el agua', bloque:'3D',
+    alumnos:['Sin asistentes registrados'],
+    invitados: 0 },
+];
+
+// Capacity = exact alumnos + exact invitados from the form (no VIP added per film — VIP seats managed separately)
+// Max invitados por bloque: 8 en 2D, 12 en 3D
+const MAX_INV = { '2D': 8, '3D': 12 };
+
+function calcCap(film) {
+  const validAlumnos = film.alumnos.filter(a => a !== 'Sin asistentes registrados').length;
+  return validAlumnos + film.invitados;
+}
+
+// State
+let STATE = {};
+let LOG = [];
+let filter = 'all';
+let search = '';
+let qty = 1;
+let selectedFilm = '';
+let syncing = false;
+let lastSave = Date.now();
+
+// Init state from storage
+async function initState() {
+  try {
+    const saved = await window.storage.get('parallax-state-v2');
+    if (saved) STATE = JSON.parse(saved.value);
+  } catch(e) {}
+  try {
+    const savedLog = await window.storage.get('parallax-log-v2');
+    if (savedLog) LOG = JSON.parse(savedLog.value);
+  } catch(e) {}
+
+  FILMS_RAW.forEach(f => {
+    if (!STATE[f.id]) STATE[f.id] = { used: 0 };
+  });
+  render();
+  startPolling();
+}
+
+async function saveState() {
+  await window.storage.set('parallax-state-v2', JSON.stringify(STATE));
+  await window.storage.set('parallax-log-v2', JSON.stringify(LOG.slice(-200)));
+  lastSave = Date.now();
+  updateSyncLabel();
+}
+
+async function loadState() {
+  try {
+    const saved = await window.storage.get('parallax-state-v2');
+    if (saved) {
+      const remote = JSON.parse(saved.value);
+      let changed = false;
+      Object.keys(remote).forEach(k => {
+        if (!STATE[k] || remote[k].used !== STATE[k].used) { STATE[k] = remote[k]; changed = true; }
+      });
+      if (changed) render();
+    }
+    const savedLog = await window.storage.get('parallax-log-v2');
+    if (savedLog) {
+      const remoteLog = JSON.parse(savedLog.value);
+      if (remoteLog.length !== LOG.length) { LOG = remoteLog; renderLog(); }
+    }
+  } catch(e) {}
+}
+
+function startPolling() {
+  setInterval(loadState, 3000);
+  setInterval(updateSyncLabel, 1000);
+}
+
+function updateSyncLabel() {
+  const secs = Math.floor((Date.now() - lastSave) / 1000);
+  const el = document.getElementById('last-sync-time');
+  if (el) el.textContent = secs < 5 ? 'Ahora' : `Hace ${secs}s`;
+}
+
+// ── RENDER ──────────────────────────────────────────
+function getFilmData(f) {
+  const cap = calcCap(f);
+  const used = (STATE[f.id] || {used:0}).used;
+  const avail = Math.max(0, cap - used);
+  const pct = Math.min(100, Math.round(used / cap * 100));
+  const isClosed = cap === 0;
+  const status = isClosed ? 'closed' : avail === 0 ? 'full' : avail <= Math.ceil(cap * 0.15) ? 'warn' : 'ok';
+  return { cap, used, avail, pct, status };
+}
+
+function render() {
+  renderKPIs();
+  renderGrid();
+  renderCheckinPanel();
+  renderLog();
+}
+
+function renderKPIs() {
+  const all2D = FILMS_RAW.filter(f=>f.bloque==='2D');
+  const all3D = FILMS_RAW.filter(f=>f.bloque==='3D');
+  const sum = (films) => films.reduce((a,f) => {
+    const d = getFilmData(f);
+    return { used: a.used+d.used, cap: a.cap+d.cap, avail: a.avail+d.avail };
+  }, {used:0,cap:0,avail:0});
+  const s2 = sum(all2D), s3 = sum(all3D), sAll = sum(FILMS_RAW);
+  const el = document.getElementById('kpi-row');
+  el.innerHTML = `
+    <div class="kpi"><div class="kpi-label">Total entradas</div><div class="kpi-val gold">${sAll.used}</div><div class="kpi-sub">de ${sAll.cap} capacidad</div></div>
+    <div class="kpi"><div class="kpi-label">Disponible total</div><div class="kpi-val">${sAll.avail}</div><div class="kpi-sub">lugares libres</div></div>
+    <div class="kpi"><div class="kpi-label">Bloque 2D</div><div class="kpi-val" style="color:var(--c2d)">${s2.used}<span style="font-size:14px;color:var(--silver)">/${s2.cap}</span></div><div class="kpi-sub">${s2.avail} disponibles</div></div>
+    <div class="kpi"><div class="kpi-label">Bloque 3D</div><div class="kpi-val" style="color:var(--c3d)">${s3.used}<span style="font-size:14px;color:var(--silver)">/${s3.cap}</span></div><div class="kpi-sub">${s3.avail} disponibles</div></div>
+  `;
+}
+
+function renderGrid() {
+  const el = document.getElementById('film-grid');
+  const films = FILMS_RAW.filter(f => {
+    const matchFilter = filter === 'all' || f.bloque === filter;
+    const q = search.toLowerCase();
+    const matchSearch = !q || f.title.toLowerCase().includes(q) || f.alumnos.join(' ').toLowerCase().includes(q);
+    return matchFilter && matchSearch;
+  });
+
+  el.innerHTML = films.map(f => {
+    const d = getFilmData(f);
+    const sc = d.status;
+    const colorClass = sc === 'ok' ? 's-ok' : sc === 'warn' ? 's-warn' : 's-full';
+    const statusLabel = sc === 'ok' ? 'Disponible' : sc === 'warn' ? 'Últimos lugares' : sc === 'closed' ? 'Sin asistentes' : 'Lleno';
+    const fillClass = sc === 'ok' ? 'fill-ok' : sc === 'warn' ? 'fill-warn' : 'fill-full';
+    const availColor = sc === 'ok' ? 'var(--ok)' : sc === 'warn' ? 'var(--warn)' : 'var(--full)';
+    const alumnos = f.alumnos.join(' · ');
+    const isFullBtn = sc === 'full';
+    return `<div class="film-card status-${sc}" id="card-${f.id}">
+      <div class="card-accent accent-${f.bloque.toLowerCase()}"></div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-bloque-tag tag-${f.bloque.toLowerCase()}">${f.bloque}</span>
+          <span class="status-badge ${colorClass}">${statusLabel}</span>
+        </div>
+        <div class="card-title">${f.title}</div>
+        <div class="card-alumnos">${alumnos}</div>
+        <div class="cap-section">
+          <div class="cap-row">
+            <div class="cap-nums"><span class="used">${d.used}</span><span class="sep">/</span><span class="total">${d.cap}</span></div>
+            <div class="cap-avail"><span class="cap-avail-num" style="color:${availColor}">${d.avail}</span><span class="cap-avail-label">disponibles</span></div>
+          </div>
+          <div class="pct-bar"><div class="pct-fill ${fillClass}" style="width:${d.pct}%"></div></div>
+        </div>
+        ${isFullBtn
+          ? `<button class="card-btn btn-full" disabled>Lleno</button>`
+          : `<button class="card-btn btn-reg" onclick="quickReg('${f.id}',1)">+ Registrar entrada</button>`
+        }
+        <button class="card-btn btn-undo" onclick="quickUndo('${f.id}')">↩ Deshacer</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderCheckinPanel() {
+  const sel = document.getElementById('film-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Selecciona un corto —</option>';
+  FILMS_RAW.forEach(f => {
+    const d = getFilmData(f);
+    sel.innerHTML += `<option value="${f.id}" ${cur===f.id?'selected':''}>[${f.bloque}] ${f.title} · ${d.avail} disponibles</option>`;
+  });
+  if (cur) updateFilmInfo(cur);
+}
+
+function onFilmSelect() {
+  selectedFilm = document.getElementById('film-select').value;
+  qty = 1;
+  document.getElementById('qty-val').textContent = qty;
+  updateFilmInfo(selectedFilm);
+}
+
+function updateFilmInfo(fid) {
+  const panel = document.getElementById('film-info-panel');
+  const regBtn = document.getElementById('main-reg-btn');
+  const qtyRow = document.getElementById('qty-row');
+  if (!fid) {
+    panel.classList.remove('visible');
+    qtyRow.style.display = 'none';
+    regBtn.disabled = true;
+    regBtn.textContent = 'Selecciona un corto';
+    regBtn.className = 'reg-btn';
+    return;
+  }
+  const f = FILMS_RAW.find(x=>x.id===fid);
+  if (!f) return;
+  const d = getFilmData(f);
+  panel.classList.add('visible');
+  qtyRow.style.display = 'flex';
+  document.getElementById('fip-title').textContent = f.title;
+  document.getElementById('fip-alumnos').textContent = '👥 ' + f.alumnos.join(' · ');
+  const availEl = document.getElementById('fip-avail');
+  availEl.textContent = d.avail;
+  availEl.className = 'fip-big ' + (d.status==='ok'?'ok':d.status==='warn'?'warn':'full');
+  document.getElementById('fip-detail').textContent = `${d.used} entradas · ${d.cap} total`;
+  const bar = document.getElementById('fip-bar');
+  bar.style.width = d.pct + '%';
+  bar.style.background = d.status==='ok'?'var(--ok)':d.status==='warn'?'var(--warn)':'var(--full)';
+
+  if (d.avail === 0) {
+    regBtn.disabled = true;
+    regBtn.textContent = 'Corto lleno — Acceso bloqueado';
+    regBtn.className = 'reg-btn full-btn';
+  } else {
+    regBtn.disabled = false;
+    regBtn.textContent = `Registrar ${qty} persona${qty>1?'s':''}`;
+    regBtn.className = 'reg-btn';
+  }
+}
+
+function renderLog() {
+  const el = document.getElementById('log-entries');
+  document.getElementById('log-count').textContent = `${LOG.length} entradas`;
+  if (!LOG.length) { el.innerHTML = '<div class="log-empty">Sin entradas registradas aún</div>'; return; }
+  el.innerHTML = [...LOG].reverse().map(e => {
+    const sign = e.qty > 0 ? '+' : '';
+    const cls = e.qty > 0 ? 'pos' : 'neg';
+    return `<div class="log-entry">
+      <div class="log-time">${e.time}</div>
+      <div><div class="log-film">${e.title}</div><div class="log-detail">${e.bloque} · ${e.alumnosStr}</div></div>
+      <div class="log-qty ${cls}">${sign}${e.qty}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── ACTIONS ──────────────────────────────────────────
+function quickReg(fid, n) {
+  const f = FILMS_RAW.find(x=>x.id===fid);
+  const d = getFilmData(f);
+  const toAdd = Math.min(n, d.avail);
+  if (toAdd <= 0) { showToast('Aforo lleno — acceso bloqueado', true); return; }
+  if (!STATE[fid]) STATE[fid] = {used:0};
+  STATE[fid].used += toAdd;
+  addLog(f, toAdd);
+  saveState();
+  render();
+  showToast(`+${toAdd} registrado${toAdd>1?'s':''} · ${f.title}`);
+}
+
+function quickUndo(fid) {
+  const f = FILMS_RAW.find(x=>x.id===fid);
+  if (!STATE[fid] || STATE[fid].used <= 0) { showToast('No hay entradas para deshacer', true); return; }
+  STATE[fid].used = Math.max(0, STATE[fid].used - 1);
+  addLog(f, -1);
+  saveState();
+  render();
+  showToast(`↩ Deshecho · ${f.title}`);
+}
+
+function doCheckin() {
+  if (!selectedFilm) return;
+  quickReg(selectedFilm, qty);
+  qty = 1;
+  document.getElementById('qty-val').textContent = 1;
+  updateFilmInfo(selectedFilm);
+}
+
+function doUndo() {
+  if (!selectedFilm) { showToast('Selecciona un corto primero', true); return; }
+  quickUndo(selectedFilm);
+  updateFilmInfo(selectedFilm);
+}
+
+function changeQty(delta) {
+  const f = selectedFilm ? FILMS_RAW.find(x=>x.id===selectedFilm) : null;
+  const maxAvail = f ? getFilmData(f).avail : 20;
+  qty = Math.max(1, Math.min(20, Math.min(maxAvail, qty + delta)));
+  document.getElementById('qty-val').textContent = qty;
+  const btn = document.getElementById('main-reg-btn');
+  if (btn && !btn.disabled) btn.textContent = `Registrar ${qty} persona${qty>1?'s':''}`;
+}
+
+function addLog(f, qty) {
+  const now = new Date();
+  const time = now.toLocaleTimeString('es-MX', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  LOG.push({ time, title: f.title, bloque: f.bloque, alumnosStr: f.alumnos.slice(0,3).join(', ')+(f.alumnos.length>3?'…':''), qty });
+}
+
+function clearLog() {
+  if (!confirm('¿Limpiar el registro de entradas?')) return;
+  LOG = [];
+  saveState();
+  renderLog();
+}
+
+// ── UI HELPERS ──────────────────────────────────────
+function switchView(id) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  document.querySelectorAll('.view-btn').forEach(b=>{ if(b.textContent.toLowerCase().includes(id.slice(0,4))) b.classList.add('active'); });
+  const navEl = document.getElementById('nav-'+id);
+  if (navEl) navEl.classList.add('active');
+}
+
+function setFilter(f, btn) {
+  filter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid();
+}
+
+function setSearch(val) {
+  search = val;
+  renderGrid();
+}
+
+let toastTimer;
+function showToast(msg, isErr=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (isErr?' err':'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+// ── BOOT ──────────────────────────────────────────
+initState();
+</script>
+</body>
+</html>
