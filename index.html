@@ -539,6 +539,124 @@ html, body {
   color: var(--er); cursor: pointer; border-radius: var(--r-full);
   min-height: 34px; touch-action: manipulation;
 }
+
+/* ══ FILM DETAIL MODAL ═══════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 800;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+@media(min-width: 600px) { .modal-overlay { align-items: center; } }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--bg1); border: 0.5px solid var(--b1);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  width: 100%; max-width: 540px; max-height: 90vh;
+  display: flex; flex-direction: column;
+  transform: translateY(24px); transition: transform 0.25s;
+  overflow: hidden;
+}
+@media(min-width: 600px) {
+  .modal { border-radius: var(--r-xl); max-height: 80vh; }
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-header {
+  padding: 20px 20px 14px; flex-shrink: 0;
+  border-bottom: 0.5px solid var(--b2);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+}
+.modal-header-left { flex: 1; min-width: 0; }
+.modal-blq-tag { display: inline-flex; align-items: center; gap: 5px;
+  font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+  padding: 3px 9px; border-radius: var(--r-full); margin-bottom: 8px; }
+.modal-title { font-size: 20px; font-weight: 700; color: var(--t1); letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 4px; }
+.modal-meta { font-size: 11px; color: var(--t3); }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--b2); border: 0.5px solid var(--b1);
+  color: var(--t2); font-size: 16px; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s; touch-action: manipulation;
+}
+.modal-close:hover { background: rgba(255,255,255,0.1); }
+
+.modal-cap-strip {
+  padding: 14px 20px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 16px;
+  background: var(--bg2); border-bottom: 0.5px solid var(--b2);
+}
+.mcs-item { text-align: center; }
+.mcs-n { font-size: 24px; font-weight: 700; color: var(--t1); letter-spacing: -0.5px; line-height: 1; }
+.mcs-n.ok { color: var(--ok); } .mcs-n.wn { color: var(--wn); } .mcs-n.er { color: var(--er); }
+.mcs-l { font-size: 9px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--t3); margin-top: 3px; }
+.mcs-sep { width: 0.5px; background: var(--b1); align-self: stretch; flex-shrink: 0; }
+.mcs-bar-wrap { flex: 1; }
+.mcs-bar { height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+.mcs-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.mcs-bar-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--t3); }
+
+.modal-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0; }
+
+.modal-section { padding: 0 20px; }
+.modal-section-head {
+  font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--t3); padding: 14px 0 10px;
+  border-bottom: 0.5px solid var(--b2); margin-bottom: 0;
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; background: var(--bg1); z-index: 1;
+}
+.modal-count { font-size: 12px; font-weight: 600; color: var(--t2); }
+
+.modal-srch {
+  width: 100%; font-family: var(--ff); font-size: 13px;
+  padding: 10px 14px; background: var(--bg2); border: 0.5px solid var(--b1);
+  color: var(--t1); border-radius: var(--r-sm); outline: none;
+  margin: 10px 0; transition: border-color 0.15s;
+}
+.modal-srch:focus { border-color: rgba(255,255,255,0.2); }
+.modal-srch::placeholder { color: var(--t3); }
+
+.alumno-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 0.5px solid var(--b2);
+}
+.alumno-row:last-child { border-bottom: none; }
+.alumno-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--t2);
+  background: var(--bg3); border: 0.5px solid var(--b1);
+}
+.alumno-name { font-size: 13px; font-weight: 500; color: var(--t1); flex: 1; line-height: 1.3; }
+.alumno-num { font-size: 10px; color: var(--t3); }
+
+.modal-reg-btn {
+  width: 100%; font-family: var(--ff); font-size: 14px; font-weight: 700;
+  padding: 14px; border-radius: var(--r-sm); cursor: pointer;
+  background: var(--pu); border: none; color: #fff;
+  margin: 0; min-height: 50px; touch-action: manipulation;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.modal-reg-btn:active { transform: scale(0.98); }
+.modal-reg-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.modal-reg-btn.er { background: var(--erb); color: var(--er); border: 0.5px solid var(--err); }
+.modal-footer {
+  padding: 14px 20px 20px; flex-shrink: 0;
+  border-top: 0.5px solid var(--b2); background: var(--bg1);
+}
+.modal-footer-qty { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.modal-footer-qty-lbl { font-size: 11px; font-weight: 500; color: var(--t2); flex: 1; }
+.no-alumnos { font-size: 12px; color: var(--t3); padding: 16px 0; text-align: center; }
+
+/* Make cards clickable for detail */
+.fcard { cursor: pointer; }
+.fcard-body { pointer-events: none; }
+.card-btns, .card-btns * { pointer-events: all; }
+
 </style>
 </head>
 <body>
@@ -744,6 +862,42 @@ html, body {
     </div>
 
   </div><!-- /views -->
+
+  <!-- FILM DETAIL MODAL -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-blq-tag" id="m-blq-tag"></div>
+          <div class="modal-title" id="m-title"></div>
+          <div class="modal-meta" id="m-meta"></div>
+        </div>
+        <button class="modal-close" onclick="closeModal(null)" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-cap-strip" id="m-cap-strip"></div>
+      <div class="modal-body">
+        <div class="modal-section">
+          <div class="modal-section-head">
+            <span>Alumnos participantes</span>
+            <span class="modal-count" id="m-alu-count"></span>
+          </div>
+          <input class="modal-srch" type="search" id="m-srch" placeholder="Buscar alumno…" oninput="filterAlumnos(this.value)">
+          <div id="m-alumnos-list"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-qty">
+          <div class="modal-footer-qty-lbl">Personas a registrar</div>
+          <div class="qty-ctrl">
+            <button class="qbtn" onclick="cqModal(-1)">−</button>
+            <div class="qval" id="m-qty">1</div>
+            <button class="qbtn" onclick="cqModal(1)">+</button>
+          </div>
+        </div>
+        <button class="modal-reg-btn" id="m-reg-btn" onclick="doRegModal()">Registrar entrada</button>
+      </div>
+    </div>
+  </div>
 </div><!-- /shell -->
 
 <div id="toast"></div>
@@ -1201,6 +1355,7 @@ function rAll() {
   rOv(); rGrid('2d'); rGrid('3d');
   rBlkHeader('2d'); rBlkHeader('3d');
   rSelects(); rVIP(); rLog();
+  if(modalFilmId) { updModalCap(); renderModalAlumnos(modalAluFilter); }
 }
 
 /* ══ NAV ═════════════════════════════════════════════ */
@@ -1228,6 +1383,113 @@ function toast(msg, type='') {
   el.textContent = msg; el.className = 'on' + (type?' '+type:'');
   clearTimeout(_tt); _tt = setTimeout(() => el.className = '', 2600);
 }
+
+
+/* ══ FILM DETAIL MODAL ═══════════════════════════════ */
+let modalFilmId = '';
+let modalQty = 1;
+let modalAluFilter = '';
+
+function openModal(id) {
+  const f = FILMS.find(x => x.id === id); if(!f) return;
+  modalFilmId = id; modalQty = 1; modalAluFilter = '';
+  document.getElementById('m-qty').textContent = 1;
+  document.getElementById('m-srch').value = '';
+  const is2d = f.b === '2D';
+  const tag = document.getElementById('m-blq-tag');
+  tag.textContent = 'Bloque ' + f.b + ' · Animación';
+  tag.className = 'modal-blq-tag ' + (is2d ? 'blk-tag-2d' : 'blk-tag-3d');
+  document.getElementById('m-title').textContent = f.t;
+  document.getElementById('m-meta').textContent = f.a.length + ' alumno' + (f.a.length!==1?'s':'') + ' · ' + f.inv + ' invitados registrados';
+  updModalCap();
+  renderModalAlumnos('');
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  if(e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  modalFilmId = '';
+}
+
+function updModalCap() {
+  if(!modalFilmId) return;
+  const f = FILMS.find(x => x.id === modalFilmId); if(!f) return;
+  const used = fused(f.id), cap = fcap(f), avail = favail(f), pct = fpct(f), s = fst(f);
+  const ac = s==='ok'?'var(--ok)':s==='wn'?'var(--wn)':'var(--er)';
+  document.getElementById('m-cap-strip').innerHTML = `
+    <div class="mcs-item">
+      <div class="mcs-n">${used}</div>
+      <div class="mcs-l">Entradas</div>
+    </div>
+    <div class="mcs-sep"></div>
+    <div class="mcs-bar-wrap">
+      <div class="mcs-bar"><div class="mcs-bar-fill" style="width:${pct}%;background:${ac}"></div></div>
+      <div class="mcs-bar-labels"><span>${pct}% ocupado</span><span>${cap} capacidad</span></div>
+    </div>
+    <div class="mcs-sep"></div>
+    <div class="mcs-item">
+      <div class="mcs-n ${s==='ok'?'ok':s==='wn'?'wn':'er'}">${avail}</div>
+      <div class="mcs-l">Disponible</div>
+    </div>
+  `;
+  const btn = document.getElementById('m-reg-btn');
+  if(!cap || avail === 0) {
+    btn.disabled = true; btn.className = 'modal-reg-btn er';
+    btn.textContent = !cap ? 'Sin asistentes' : 'Bloqueado — Aforo completo';
+  } else {
+    btn.disabled = false; btn.className = 'modal-reg-btn';
+    btn.textContent = `Registrar ${modalQty} persona${modalQty>1?'s':''}`;
+  }
+}
+
+function renderModalAlumnos(q) {
+  const f = FILMS.find(x => x.id === modalFilmId); if(!f) return;
+  const filtered = f.a.filter(n => !q || n.toLowerCase().includes(q.toLowerCase()));
+  document.getElementById('m-alu-count').textContent = filtered.length + ' / ' + f.a.length;
+  if(!f.a.length) {
+    document.getElementById('m-alumnos-list').innerHTML = '<div class="no-alumnos">Sin alumnos registrados en este corto</div>';
+    return;
+  }
+  document.getElementById('m-alumnos-list').innerHTML = filtered.map((name, i) => {
+    const initials = name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+    const absIdx = f.a.indexOf(name) + 1;
+    return `<div class="alumno-row">
+      <div class="alumno-avatar">${initials}</div>
+      <div class="alumno-name">${name}</div>
+      <div class="alumno-num">#${absIdx}</div>
+    </div>`;
+  }).join('');
+}
+
+function filterAlumnos(q) {
+  modalAluFilter = q; renderModalAlumnos(q);
+}
+
+function cqModal(d) {
+  const f = modalFilmId ? FILMS.find(x=>x.id===modalFilmId) : null;
+  const mx = f ? favail(f) : 20;
+  modalQty = Math.max(1, Math.min(20, Math.min(mx, modalQty + d)));
+  document.getElementById('m-qty').textContent = modalQty;
+  const btn = document.getElementById('m-reg-btn');
+  if(!btn.disabled) btn.textContent = `Registrar ${modalQty} persona${modalQty>1?'s':''}`;
+}
+
+function doRegModal() {
+  if(!modalFilmId) return;
+  regFilm(modalFilmId, modalQty);
+  modalQty = 1; document.getElementById('m-qty').textContent = 1;
+  updModalCap();
+}
+
+/* Patch filmCard to open modal on card click, not button area */
+const _origFilmCard = filmCard;
+filmCard = function(f) {
+  let html = _origFilmCard(f);
+  return html.replace('<div class="fcard', `<div class="fcard" onclick="if(!event.target.closest('.card-btns'))openModal('${f.id}')" `);
+};
 
 /* ══ BOOT ════════════════════════════════════════════ */
 init();
