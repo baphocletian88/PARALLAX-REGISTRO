@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Parallax 2026 · Generador de QRs</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qr-creator@1.0.0/dist/qr-creator.min.js"></script>
 <style>
 :root {
   --bg:#000;--bg1:#0A0A0A;--bg2:#111;--bg3:#161616;
@@ -281,61 +281,41 @@ function makeQRCard(title, sub, url, stripeClass, tagClass, tagText, dlName) {
 }
 
 function generateQR(canvasId, url) {
-  QRCode.toCanvas(document.getElementById(canvasId), url, {
-    width: 136, margin: 0,
-    color: { dark: '#000000', light: '#FFFFFF' }
-  }, err => { if(err) console.error(err); });
-}
-
-function downloadQR(id, title) {
-  const canvas = document.getElementById('qr-' + id);
-  // Create a larger canvas with label
-  const out = document.createElement('canvas');
-  out.width = 360; out.height = 420;
-  const ctx = out.getContext('2d');
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(0,0,360,420);
-  ctx.drawImage(canvas, 112, 30, 136, 136);
-  ctx.fillStyle = '#000000';
-  ctx.font = 'bold 14px Inter, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('PARALLAX 2026', 180, 195);
-  ctx.font = '12px Inter, sans-serif';
-  ctx.fillStyle = '#333';
-  // Wrap title
-  const words = title.split(' ');
-  let line = '', y = 215;
-  words.forEach((w, i) => {
-    const test = line + w + ' ';
-    if(ctx.measureText(test).width > 300 && i > 0) {
-      ctx.fillText(line, 180, y); line = w + ' '; y += 18;
-    } else { line = test; }
-  });
-  ctx.fillText(line, 180, y);
-  ctx.font = '10px Inter, sans-serif';
-  ctx.fillStyle = '#888';
-  ctx.fillText('22 mayo 2026 · Teatro UDEM', 180, y + 20);
-  const a = document.createElement('a');
-  a.download = 'QR_' + id + '.png';
-  a.href = out.toDataURL('image/png');
-  a.click();
-}
-
-function copyUrl(id) {
-  const url = document.getElementById('url-' + id).textContent;
-  navigator.clipboard.writeText(url).then(() => {
-    const btn = document.getElementById('cp-' + id);
-    btn.textContent = '✓'; btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000);
-  });
+  const el = document.getElementById(canvasId);
+  if(!el) return;
+  try {
+    QrCreator.render({
+      text: url,
+      radius: 0,
+      ecLevel: 'M',
+      fill: '#000000',
+      background: '#FFFFFF',
+      size: 136
+    }, el);
+  } catch(e) {
+    // fallback: draw placeholder
+    const ctx = el.getContext('2d');
+    if(ctx) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0,0,136,136);
+      ctx.fillStyle = '#999';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('QR no disponible', 68, 70);
+      ctx.fillText('Ver URL abajo', 68, 84);
+    }
+    console.error('QR error:', e);
+  }
 }
 
 function regenAll() {
-  // Films
   const g2 = document.getElementById('grid-2d');
   const g3 = document.getElementById('grid-3d');
   const gv = document.getElementById('grid-vip');
   g2.innerHTML = ''; g3.innerHTML = ''; gv.innerHTML = '';
+
+  // Build all cards first, then render QRs with stagger
+  const queue = [];
 
   FILMS.forEach(f => {
     const url = filmUrl(f);
@@ -345,7 +325,7 @@ function regenAll() {
       is2d ? 'qs-2d' : 'qs-3d', is2d ? 'qt-2d' : 'qt-3d',
       'Bloque ' + f.b, dlName);
     (is2d ? g2 : g3).appendChild(card);
-    setTimeout(() => generateQR('qr-' + dlName, url), 50);
+    queue.push({id: 'qr-' + dlName, url});
   });
 
   VIP.forEach(g => {
@@ -353,12 +333,77 @@ function regenAll() {
     const dlName = 'vip_' + g.id;
     const card = makeQRCard(g.name, g.org, url, 'qs-vip', 'qt-vip', 'VIP', dlName);
     gv.appendChild(card);
-    setTimeout(() => generateQR('qr-' + dlName, url), 50);
+    queue.push({id: 'qr-' + dlName, url});
+  });
+
+  // Render QRs in batches to avoid blocking the UI
+  const BATCH = 5, DELAY = 80;
+  queue.forEach(({id, url}, i) => {
+    setTimeout(() => generateQR(id, url), Math.floor(i/BATCH) * DELAY + 50);
   });
 }
 
-// Initial render
-setTimeout(regenAll, 200);
+
+function downloadQR(id, title) {
+  const src = document.getElementById('qr-' + id);
+  if(!src) return;
+  // Create output canvas with label
+  const out = document.createElement('canvas');
+  out.width = 360; out.height = 440;
+  const ctx = out.getContext('2d');
+  // White background
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, 360, 440);
+  // Draw QR centered
+  try { ctx.drawImage(src, 112, 24, 136, 136); } catch(e) {}
+  // Festival name
+  ctx.fillStyle = '#000000';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('PARALLAX 2026', 180, 185);
+  // Title (word-wrap)
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillStyle = '#333333';
+  const words = title.split(' '), maxW = 300;
+  let line = '', y = 205;
+  words.forEach((w, i) => {
+    const test = line + w + ' ';
+    if(ctx.measureText(test).width > maxW && i > 0) {
+      ctx.fillText(line.trim(), 180, y); line = w + ' '; y += 17;
+    } else { line = test; }
+  });
+  ctx.fillText(line.trim(), 180, y);
+  // Date
+  ctx.font = '10px Inter, sans-serif';
+  ctx.fillStyle = '#888888';
+  ctx.fillText('22 mayo 2026 · Teatro UDEM', 180, y + 18);
+  // Download
+  const a = document.createElement('a');
+  a.download = 'QR_' + id + '.png';
+  a.href = out.toDataURL('image/png');
+  a.click();
+}
+
+function copyUrl(id, btnId) {
+  const text = document.getElementById('url-' + id);
+  if(!text) return;
+  navigator.clipboard.writeText(text.textContent.trim()).then(() => {
+    const btn = document.getElementById('cp-' + id);
+    if(!btn) return;
+    btn.textContent = '✓'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// Initial render - wait for lib
+function tryInit() {
+  if(typeof QrCreator !== 'undefined') {
+    setTimeout(regenAll, 100);
+  } else {
+    setTimeout(tryInit, 150);
+  }
+}
+tryInit();
 </script>
 </body>
 </html>
