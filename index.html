@@ -2,1119 +2,786 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Parallax 2026 — Control de Acceso</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
 <style>
 :root {
-  --ink: #080D18;
-  --ink2: #0D1525;
-  --ink3: #152035;
-  --gold: #C8952A;
-  --gold2: #E8B84B;
-  --gold3: rgba(200,149,42,0.15);
+  --ink:    #07101C;
+  --ink2:   #0C1828;
+  --ink3:   #122035;
+  --gold:   #C8952A;
+  --gold2:  #E8B84B;
+  --gold3:  rgba(200,149,42,0.12);
   --silver: #7A8FAA;
-  --cream: #E8E2D8;
-  --white: #F4F0EA;
-  --c2d: #5B8FE8;
-  --c2d-bg: rgba(91,143,232,0.1);
-  --c3d: #3DBFA0;
-  --c3d-bg: rgba(61,191,160,0.1);
-  --ok: #2ECC71;
-  --warn: #F39C12;
-  --full: #E74C3C;
-  --ok-bg: rgba(46,204,113,0.12);
-  --warn-bg: rgba(243,156,18,0.12);
-  --full-bg: rgba(231,76,60,0.12);
+  --cream:  #E4DDD2;
+  --white:  #F2EDE6;
+  --c2d:    #5B8FE8;
+  --c3d:    #3DBFA0;
+  --vip:    #A855F7;
+  --vip2:   #C084FC;
+  --vip-bg: rgba(168,85,247,0.1);
+  --vip-b:  rgba(168,85,247,0.25);
+  --ok:     #22C55E;
+  --warn:   #F59E0B;
+  --full:   #EF4444;
+  --ok-bg:  rgba(34,197,94,0.1);
+  --warn-bg:rgba(245,158,11,0.1);
+  --full-bg:rgba(239,68,68,0.1);
   --border: rgba(255,255,255,0.06);
-  --border2: rgba(200,149,42,0.2);
-  --mono: 'DM Mono', monospace;
-  --display: 'Syne', sans-serif;
-  --radius: 10px;
-  --radius-sm: 6px;
+  --bg-gold:rgba(200,149,42,0.15);
+  --r:10px; --rsm:6px;
+  --mono:'DM Mono',monospace;
+  --disp:'Syne',sans-serif;
 }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--ink);color:var(--cream);font-family:var(--mono);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html, body { height: 100%; background: var(--ink); color: var(--cream); font-family: var(--mono); overflow-x: hidden; }
-
-/* ── APP SHELL ── */
-.app { display: flex; flex-direction: column; min-height: 100vh; }
-
-/* ── TOPBAR ── */
-.topbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px; height: 52px;
-  background: var(--ink2);
-  border-bottom: 0.5px solid var(--border2);
-  flex-shrink: 0; gap: 12px;
-  position: sticky; top: 0; z-index: 100;
+/* ── TOPBAR ───────────────────────────────────────── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;height:52px;background:var(--ink2);
+  border-bottom:0.5px solid rgba(200,149,42,0.2);
+  flex-shrink:0;gap:8px;z-index:200;
 }
-.topbar-brand { display: flex; align-items: center; gap: 10px; }
-.brand-name { font-family: var(--display); font-size: 15px; font-weight: 700; letter-spacing: 2px; color: var(--gold2); }
-.brand-sub { font-size: 9px; letter-spacing: 2px; color: var(--silver); text-transform: uppercase; display: none; }
-@media(min-width:480px){ .brand-sub { display: block; } }
-.topbar-center { display: flex; gap: 4px; }
-.view-btn {
-  font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
-  padding: 5px 12px; background: transparent; border: 0.5px solid var(--border);
-  color: var(--silver); cursor: pointer; border-radius: var(--radius-sm);
-  transition: all .15s;
+.brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.brand-name{font-family:var(--disp);font-size:15px;font-weight:800;letter-spacing:3px;color:var(--gold2)}
+.brand-pill{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--silver);padding:2px 6px;border:0.5px solid var(--border);border-radius:4px;display:none}
+@media(min-width:480px){.brand-pill{display:inline-block}}
+
+.top-nav{display:flex;gap:2px}
+.tnav{
+  font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
+  padding:5px 10px;background:transparent;border:0.5px solid transparent;
+  color:var(--silver);cursor:pointer;border-radius:var(--rsm);transition:all .15s;white-space:nowrap;
 }
-.view-btn.active { background: var(--gold3); border-color: var(--border2); color: var(--gold2); }
-.topbar-right { display: flex; align-items: center; gap: 10px; }
-.sync-pill {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
-  padding: 4px 10px; border-radius: 20px;
-  border: 0.5px solid rgba(46,204,113,0.3);
-  color: var(--ok); background: rgba(46,204,113,0.08);
+.tnav.active{background:var(--bg-gold);border-color:rgba(200,149,42,0.3);color:var(--gold2)}
+.tnav.vip-nav.active{background:var(--vip-bg);border-color:var(--vip-b);color:var(--vip2)}
+@media(max-width:640px){.top-nav{display:none}}
+
+.sync-area{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--silver);flex-shrink:0}
+.sync-dot.live{background:var(--ok);animation:pulse 2s infinite}
+.sync-dot.err{background:var(--full)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.sync-txt{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--silver)}
+.sync-txt.live{color:var(--ok)}
+.sync-txt.err{color:var(--full)}
+
+/* ── VIEWS ────────────────────────────────────────── */
+.views{flex:1;overflow:hidden;position:relative}
+.view{position:absolute;inset:0;display:none;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+.view.active{display:flex}
+
+/* ── BOTTOM NAV ───────────────────────────────────── */
+.bot-nav{
+  display:flex;background:var(--ink2);
+  border-top:0.5px solid rgba(200,149,42,0.15);
+  flex-shrink:0;z-index:200;
 }
-.sync-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); animation: blink 1.8s infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
-.last-sync { font-size: 9px; color: var(--silver); letter-spacing: .5px; }
-
-/* ── VIEWS ── */
-.view { display: none; flex: 1; overflow-y: auto; }
-.view.active { display: flex; flex-direction: column; }
-
-/* ── DASHBOARD VIEW ── */
-.dash-header { padding: 16px 20px 12px; }
-.dash-title { font-family: var(--display); font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--silver); margin-bottom: 14px; }
-.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.kpi { background: var(--ink2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
-.kpi-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--silver); margin-bottom: 6px; }
-.kpi-val { font-family: var(--display); font-size: 26px; font-weight: 700; color: var(--white); line-height: 1; }
-.kpi-val.gold { color: var(--gold2); }
-.kpi-sub { font-size: 10px; color: var(--silver); margin-top: 3px; }
-
-/* filter bar */
-.filter-bar { display: flex; gap: 8px; padding: 0 20px 12px; flex-wrap: wrap; align-items: center; }
-.filter-btn {
-  font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
-  padding: 5px 12px; background: transparent; border: 0.5px solid var(--border);
-  color: var(--silver); cursor: pointer; border-radius: 20px; transition: all .15s;
+@media(min-width:640px){.bot-nav{display:none}}
+.bnav{
+  flex:1;padding:8px 0 10px;background:none;border:none;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  cursor:pointer;color:var(--silver);transition:color .15s;
 }
-.filter-btn.active { color: var(--white); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
-.filter-btn.f-2d.active { color: var(--c2d); border-color: rgba(91,143,232,0.4); background: var(--c2d-bg); }
-.filter-btn.f-3d.active { color: var(--c3d); border-color: rgba(61,191,160,0.4); background: var(--c3d-bg); }
-.search-input {
-  flex: 1; min-width: 120px; font-family: var(--mono); font-size: 11px;
-  padding: 5px 10px; background: var(--ink2); border: 0.5px solid var(--border);
-  color: var(--cream); border-radius: var(--radius-sm); outline: none;
+.bnav.active{color:var(--gold2)}
+.bnav.vip-bnav.active{color:var(--vip2)}
+.bnav-icon{font-size:16px;line-height:1}
+.bnav-lbl{font-size:8px;letter-spacing:1px;text-transform:uppercase}
+
+/* ── SHARED COMPONENTS ────────────────────────────── */
+.page-head{padding:16px 16px 10px;flex-shrink:0}
+.page-title{font-family:var(--disp);font-size:18px;font-weight:700;color:var(--white);margin-bottom:1px}
+.page-sub{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--silver)}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+.kpi{background:var(--ink2);border:0.5px solid var(--border);border-radius:var(--r);padding:10px 12px}
+.kpi-l{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--silver);margin-bottom:4px}
+.kpi-v{font-family:var(--disp);font-size:20px;font-weight:700;line-height:1}
+.kpi-v.gold{color:var(--gold2)} .kpi-v.ok{color:var(--ok)} .kpi-v.warn{color:var(--warn)} .kpi-v.full{color:var(--full)}
+.kpi-v.c2d{color:var(--c2d)} .kpi-v.c3d{color:var(--c3d)} .kpi-v.vip{color:var(--vip2)}
+@media(max-width:480px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+
+.filter-row{display:flex;gap:6px;padding:0 16px 10px;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.fbtn{
+  font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;
+  padding:4px 10px;background:transparent;border:0.5px solid var(--border);
+  color:var(--silver);cursor:pointer;border-radius:20px;transition:all .15s;white-space:nowrap;
 }
-.search-input::placeholder { color: var(--silver); }
-
-/* grid */
-.film-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; padding: 0 20px 80px; }
-
-/* film card */
-.film-card {
-  background: var(--ink2); border: 0.5px solid var(--border);
-  border-radius: var(--radius); overflow: hidden; cursor: pointer;
-  transition: border-color .2s, transform .1s;
-  position: relative;
+.fbtn.active{color:var(--white);border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.05)}
+.fbtn.f2d.active{color:var(--c2d);border-color:rgba(91,143,232,0.4);background:rgba(91,143,232,0.08)}
+.fbtn.f3d.active{color:var(--c3d);border-color:rgba(61,191,160,0.4);background:rgba(61,191,160,0.08)}
+.fbtn.fvip.active{color:var(--vip2);border-color:var(--vip-b);background:var(--vip-bg)}
+.srch{
+  flex:1;min-width:100px;font-family:var(--mono);font-size:11px;
+  padding:4px 9px;background:var(--ink2);border:0.5px solid var(--border);
+  color:var(--cream);border-radius:var(--rsm);outline:none;
 }
-.film-card:hover { border-color: var(--border2); transform: translateY(-1px); }
-.film-card.status-warn { border-color: rgba(243,156,18,0.3); }
-.film-card.status-full { border-color: rgba(231,76,60,0.4); }
+.srch::placeholder{color:var(--silver)}
 
-.card-accent { height: 2px; }
-.accent-2d { background: var(--c2d); }
-.accent-3d { background: var(--c3d); }
+.scroll-body{flex:1;overflow-y:auto;padding:0 16px 90px}
 
-.card-body { padding: 14px 16px; }
-.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 8px; }
-.card-bloque-tag { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
-.tag-2d { background: var(--c2d-bg); color: var(--c2d); border: 0.5px solid rgba(91,143,232,0.25); }
-.tag-3d { background: var(--c3d-bg); color: var(--c3d); border: 0.5px solid rgba(61,191,160,0.25); }
-.status-badge { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
-.s-ok   { background: var(--ok-bg);   color: var(--ok);   border: 0.5px solid rgba(46,204,113,0.25); }
-.s-warn { background: var(--warn-bg); color: var(--warn); border: 0.5px solid rgba(243,156,18,0.25); }
-.s-full { background: var(--full-bg); color: var(--full); border: 0.5px solid rgba(231,76,60,0.25); }
-
-.card-title { font-family: var(--display); font-size: 15px; font-weight: 600; color: var(--white); margin-bottom: 4px; line-height: 1.3; }
-.card-alumnos { font-size: 10px; color: var(--silver); margin-bottom: 12px; line-height: 1.5; }
-
-/* capacity ring + bar */
-.cap-section { margin-bottom: 10px; }
-.cap-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.cap-nums { font-family: var(--display); font-size: 22px; font-weight: 700; line-height: 1; }
-.cap-nums .used { color: var(--white); }
-.cap-nums .sep { color: var(--silver); font-size: 16px; margin: 0 2px; }
-.cap-nums .total { color: var(--silver); font-size: 16px; }
-.cap-avail { text-align: right; }
-.cap-avail-num { font-family: var(--display); font-size: 18px; font-weight: 700; }
-.cap-avail-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--silver); display: block; }
-.pct-bar { height: 5px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
-.pct-fill { height: 100%; border-radius: 3px; transition: width .4s; }
-.fill-ok   { background: var(--ok); }
-.fill-warn { background: var(--warn); }
-.fill-full { background: var(--full); }
-
-/* quick-reg button on card */
-.card-btn {
-  width: 100%; font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px;
-  text-transform: uppercase; padding: 8px; border-radius: var(--radius-sm);
-  cursor: pointer; transition: all .15s; border: 0.5px solid;
-  margin-top: 4px;
+/* ── TOAST ────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:72px;left:50%;transform:translateX(-50%) translateY(16px);
+  font-family:var(--disp);font-size:12px;font-weight:700;letter-spacing:.5px;
+  padding:9px 20px;border-radius:var(--r);
+  opacity:0;transition:opacity .2s,transform .2s;z-index:500;pointer-events:none;white-space:nowrap;
+  background:var(--ok);color:var(--ink);
 }
-.btn-reg { background: var(--gold3); border-color: var(--border2); color: var(--gold2); }
-.btn-reg:hover { background: rgba(200,149,42,0.25); }
-.btn-full { background: var(--full-bg); border-color: rgba(231,76,60,0.3); color: var(--full); cursor: not-allowed; }
-.btn-undo { background: rgba(255,255,255,0.04); border-color: var(--border); color: var(--silver); margin-top: 4px; }
-.btn-undo:hover { background: rgba(255,255,255,0.08); }
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--full);color:#fff}
+.toast.info{background:var(--vip);color:#fff}
+@media(min-width:640px){.toast{bottom:20px}}
 
-/* ── CHECKIN VIEW ── */
-.checkin-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 16px 20px 80px; max-width: 500px; margin: 0 auto; width: 100%; }
-.checkin-title { font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
-.checkin-sub { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--silver); margin-bottom: 20px; }
+/* ═══════════════════════════════════════════════════
+   VIP VIEW
+═══════════════════════════════════════════════════ */
+#view-vip .page-title{color:var(--vip2)}
+#view-vip .kpi{background:var(--vip-bg);border-color:var(--vip-b)}
+#view-vip .kpi-l{color:rgba(192,132,252,.7)}
 
-.select-film-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--silver); margin-bottom: 8px; width: 100%; }
-.film-select {
-  width: 100%; font-family: var(--mono); font-size: 13px;
-  padding: 10px 14px; background: var(--ink2); border: 0.5px solid var(--border2);
-  color: var(--cream); border-radius: var(--radius); outline: none; cursor: pointer;
-  margin-bottom: 14px;
+.org-block{margin-bottom:10px}
+.org-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;
+  background:linear-gradient(90deg,rgba(168,85,247,.1),rgba(168,85,247,.04));
+  border:0.5px solid var(--vip-b);border-radius:var(--r) var(--r) 0 0;
 }
-.film-select option { background: var(--ink2); }
+.org-name{font-family:var(--disp);font-size:13px;font-weight:700;color:var(--vip2)}
+.org-right{display:flex;align-items:center;gap:7px}
+.org-stat{font-size:9px;color:var(--silver)}
+.type-pill{font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:10px;font-family:var(--mono)}
+.tp-festival{background:rgba(251,146,60,.1);color:#FB923C;border:0.5px solid rgba(251,146,60,.25)}
+.tp-empresa {background:rgba(91,143,232,.1);color:var(--c2d);border:0.5px solid rgba(91,143,232,.25)}
+.tp-media   {background:rgba(239,68,68,.1); color:#F87171;border:0.5px solid rgba(239,68,68,.2)}
+.tp-udem    {background:rgba(61,191,160,.1);color:var(--c3d);border:0.5px solid rgba(61,191,160,.25)}
+.tp-indie   {background:var(--bg-gold);     color:var(--gold2);border:0.5px solid rgba(200,149,42,.25)}
 
-/* selected film info panel */
-.film-info-panel {
-  width: 100%; background: var(--ink2); border: 0.5px solid var(--border2);
-  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px;
-  display: none;
+.guest-row{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;
+  background:var(--ink2);border:0.5px solid var(--border);border-top:none;
+  transition:background .15s;position:relative;
 }
-.film-info-panel.visible { display: block; }
-.fip-title { font-family: var(--display); font-size: 17px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
-.fip-alumnos { font-size: 11px; color: var(--silver); margin-bottom: 12px; line-height: 1.6; }
-.fip-cap { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
-.fip-big { font-family: var(--display); font-size: 32px; font-weight: 800; line-height: 1; }
-.fip-big.ok   { color: var(--ok); }
-.fip-big.warn { color: var(--warn); }
-.fip-big.full { color: var(--full); }
-.fip-cap-info { flex: 1; }
-.fip-cap-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--silver); margin-bottom: 2px; }
-.fip-cap-detail { font-size: 12px; color: var(--cream); }
-.fip-bar-track { height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; margin-top: 8px; }
-.fip-bar-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+.guest-row.in{background:rgba(34,197,94,.04)}
+.guest-row:last-of-type:not(.companion-row){border-radius:0 0 var(--r) var(--r)}
+.g-avatar{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--disp);font-size:11px;font-weight:700;
+  background:var(--vip-bg);color:var(--vip2);border:0.5px solid var(--vip-b);
+}
+.g-avatar.in{background:var(--ok-bg);color:var(--ok);border-color:rgba(34,197,94,.3)}
+.g-info{flex:1;min-width:0}
+.g-name{font-size:12px;font-weight:500;color:var(--white);line-height:1.3}
+.g-name.in{color:var(--ok)}
+.g-meta{font-size:9px;color:var(--silver);margin-top:1px}
+.g-time{font-size:9px;color:var(--gold)}
+.g-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.chk-btn{
+  font-family:var(--mono);font-size:8px;letter-spacing:1px;text-transform:uppercase;
+  padding:4px 9px;border-radius:var(--rsm);cursor:pointer;border:0.5px solid;transition:all .15s;
+}
+.chk-out{background:transparent;border-color:var(--border);color:var(--silver)}
+.chk-out:hover{border-color:var(--vip-b);color:var(--vip2)}
+.chk-in{background:var(--ok-bg);border-color:rgba(34,197,94,.3);color:var(--ok)}
 
-/* qty selector */
-.qty-row { display: flex; align-items: center; gap: 12px; width: 100%; margin-bottom: 14px; }
-.qty-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--silver); flex: 1; }
-.qty-ctrl { display: flex; align-items: center; gap: 0; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); overflow: hidden; }
-.qty-btn {
-  width: 36px; height: 36px; background: transparent; border: none;
-  font-family: var(--display); font-size: 18px; font-weight: 600;
-  color: var(--gold2); cursor: pointer; transition: background .15s;
-  display: flex; align-items: center; justify-content: center;
+.companion-row{
+  display:flex;align-items:center;gap:8px;padding:6px 12px 6px 44px;
+  background:rgba(168,85,247,.03);border:0.5px solid var(--border);border-top:none;
 }
-.qty-btn:hover { background: var(--gold3); }
-.qty-val { width: 44px; text-align: center; font-family: var(--display); font-size: 18px; font-weight: 700; color: var(--white); }
+.companion-row.last-row{border-radius:0 0 var(--r) var(--r)}
+.c-dot{width:5px;height:5px;border-radius:50%;background:rgba(168,85,247,.4);flex-shrink:0}
+.c-dot.in{background:var(--ok)}
+.c-name{font-size:11px;color:var(--silver);flex:1}
+.c-name.in{color:var(--ok)}
 
-/* big register button */
-.reg-btn {
-  width: 100%; font-family: var(--display); font-size: 14px; font-weight: 700;
-  letter-spacing: 2px; text-transform: uppercase;
-  padding: 14px; border-radius: var(--radius); cursor: pointer;
-  background: var(--gold); border: none; color: var(--ink);
-  transition: opacity .15s, transform .1s;
+/* ═══════════════════════════════════════════════════
+   DASHBOARD VIEW
+═══════════════════════════════════════════════════ */
+.film-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+.film-card{
+  background:var(--ink2);border:0.5px solid var(--border);
+  border-radius:var(--r);overflow:hidden;transition:border-color .2s;
 }
-.reg-btn:active { transform: scale(0.98); }
-.reg-btn:disabled { opacity: .4; cursor: not-allowed; }
-.reg-btn.full-btn { background: var(--full-bg); color: var(--full); border: 0.5px solid rgba(231,76,60,0.4); }
+.film-card:hover{border-color:rgba(200,149,42,.25)}
+.film-card.s-warn{border-color:rgba(245,158,11,.3)}
+.film-card.s-full{border-color:rgba(239,68,68,.35)}
+.card-top-bar{height:2px}
+.bar-2d{background:var(--c2d)}.bar-3d{background:var(--c3d)}
+.card-body{padding:12px 14px}
+.card-badges{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.bloque-tag{font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:10px}
+.bt-2d{background:rgba(91,143,232,.1);color:var(--c2d);border:0.5px solid rgba(91,143,232,.25)}
+.bt-3d{background:rgba(61,191,160,.1);color:var(--c3d);border:0.5px solid rgba(61,191,160,.25)}
+.status-tag{font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:10px}
+.st-ok  {background:var(--ok-bg);  color:var(--ok);  border:0.5px solid rgba(34,197,94,.2)}
+.st-warn{background:var(--warn-bg);color:var(--warn);border:0.5px solid rgba(245,158,11,.2)}
+.st-full{background:var(--full-bg);color:var(--full);border:0.5px solid rgba(239,68,68,.2)}
+.st-none{background:var(--border); color:var(--silver);border:0.5px solid var(--border)}
+.card-title{font-family:var(--disp);font-size:14px;font-weight:700;color:var(--white);margin-bottom:3px;line-height:1.25}
+.card-alumnos{font-size:9px;color:var(--silver);margin-bottom:10px;line-height:1.5;max-height:30px;overflow:hidden}
+.cap-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:5px}
+.cap-main{font-family:var(--disp);font-size:19px;font-weight:700;color:var(--white);line-height:1}
+.cap-main span{font-size:13px;color:var(--silver);margin-left:2px}
+.cap-avail{text-align:right}
+.cap-avail-n{font-family:var(--disp);font-size:16px;font-weight:700}
+.cap-avail-l{font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--silver);display:block}
+.pbar{height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;margin-bottom:8px}
+.pfill{height:100%;border-radius:2px;transition:width .4s}
+.pfill-ok{background:var(--ok)}.pfill-warn{background:var(--warn)}.pfill-full{background:var(--full)}
+.card-btns{display:flex;gap:5px;margin-top:2px}
+.cbtn{
+  flex:1;font-family:var(--mono);font-size:8px;letter-spacing:1px;text-transform:uppercase;
+  padding:7px 4px;border-radius:var(--rsm);cursor:pointer;transition:all .15s;border:0.5px solid;
+}
+.cbtn-reg{background:var(--bg-gold);border-color:rgba(200,149,42,.3);color:var(--gold2)}
+.cbtn-reg:hover{background:rgba(200,149,42,.22)}
+.cbtn-full{background:var(--full-bg);border-color:rgba(239,68,68,.3);color:var(--full);cursor:not-allowed}
+.cbtn-undo{background:rgba(255,255,255,.03);border-color:var(--border);color:var(--silver)}
+.cbtn-undo:hover{background:rgba(255,255,255,.07)}
 
-/* feedback toast */
-.toast {
-  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
-  background: var(--ok); color: var(--ink); font-family: var(--display);
-  font-size: 13px; font-weight: 700; letter-spacing: 1px;
-  padding: 10px 24px; border-radius: var(--radius);
-  opacity: 0; transition: opacity .2s, transform .2s; z-index: 200;
-  white-space: nowrap;
+/* ═══════════════════════════════════════════════════
+   CHECK-IN VIEW
+═══════════════════════════════════════════════════ */
+.ci-wrap{flex:1;display:flex;flex-direction:column;align-items:center;padding:16px 16px 90px;max-width:480px;margin:0 auto;width:100%}
+.ci-select{
+  width:100%;font-family:var(--mono);font-size:12px;
+  padding:10px 12px;background:var(--ink2);border:0.5px solid rgba(200,149,42,.3);
+  color:var(--cream);border-radius:var(--r);outline:none;cursor:pointer;margin-bottom:12px;
 }
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.err { background: var(--full); color: white; }
+.ci-select option{background:var(--ink2)}
+.fi-panel{
+  width:100%;background:var(--ink2);border:0.5px solid rgba(200,149,42,.25);
+  border-radius:var(--r);padding:14px;margin-bottom:12px;display:none;
+}
+.fi-panel.show{display:block}
+.fi-title{font-family:var(--disp);font-size:16px;font-weight:700;color:var(--white);margin-bottom:3px}
+.fi-alumnos{font-size:10px;color:var(--silver);margin-bottom:10px;line-height:1.6}
+.fi-caprow{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.fi-big{font-family:var(--disp);font-size:30px;font-weight:800;line-height:1}
+.fi-big.ok{color:var(--ok)}.fi-big.warn{color:var(--warn)}.fi-big.full{color:var(--full)}
+.fi-info{flex:1}
+.fi-info-l{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--silver);margin-bottom:2px}
+.fi-info-v{font-size:11px;color:var(--cream)}
+.fi-bar{height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-top:6px}
+.fi-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.qty-row{display:flex;align-items:center;gap:10px;width:100%;margin-bottom:12px}
+.qty-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--silver);flex:1}
+.qty-ctrl{display:flex;align-items:center;border:0.5px solid rgba(200,149,42,.3);border-radius:var(--rsm);overflow:hidden}
+.qbtn{
+  width:36px;height:36px;background:transparent;border:none;
+  font-family:var(--disp);font-size:18px;font-weight:700;color:var(--gold2);
+  cursor:pointer;transition:background .15s;display:flex;align-items:center;justify-content:center;
+}
+.qbtn:hover{background:var(--bg-gold)}
+.qval{width:42px;text-align:center;font-family:var(--disp);font-size:16px;font-weight:700;color:var(--white)}
+.big-reg{
+  width:100%;font-family:var(--disp);font-size:13px;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;padding:13px;border-radius:var(--r);cursor:pointer;
+  background:var(--gold);border:none;color:var(--ink);transition:opacity .15s,transform .1s;
+}
+.big-reg:active{transform:scale(.98)}.big-reg:disabled{opacity:.4;cursor:not-allowed}
+.big-reg.is-full{background:var(--full-bg);color:var(--full);border:0.5px solid rgba(239,68,68,.3)}
+.undo-btn{
+  width:100%;margin-top:6px;padding:8px;border-radius:var(--rsm);
+  font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;
+  background:rgba(255,255,255,.03);border:0.5px solid var(--border);color:var(--silver);cursor:pointer;
+}
+.undo-btn:hover{background:rgba(255,255,255,.07)}
 
-/* ── LOG VIEW ── */
-.log-wrap { flex: 1; padding: 16px 20px 80px; max-width: 600px; margin: 0 auto; width: 100%; }
-.log-title { font-family: var(--display); font-size: 18px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
-.log-sub { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--silver); margin-bottom: 16px; }
-.log-controls { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
-.log-clear { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 5px 12px; background: var(--full-bg); border: 0.5px solid rgba(231,76,60,0.3); color: var(--full); cursor: pointer; border-radius: var(--radius-sm); }
-.log-count { font-size: 10px; color: var(--silver); }
-.log-entry {
-  display: grid; grid-template-columns: 60px 1fr auto;
-  gap: 0 12px; padding: 10px 12px;
-  border-bottom: 0.5px solid var(--border);
-  font-size: 12px; align-items: start;
+/* ═══════════════════════════════════════════════════
+   LOG VIEW
+═══════════════════════════════════════════════════ */
+.log-entry{
+  display:grid;grid-template-columns:56px 1fr 32px;gap:0 10px;
+  padding:9px 0;border-bottom:0.5px solid var(--border);align-items:start;
 }
-.log-entry:last-child { border-bottom: none; }
-.log-time { color: var(--gold); font-size: 11px; padding-top: 1px; }
-.log-film { color: var(--white); font-weight: 500; margin-bottom: 2px; }
-.log-detail { color: var(--silver); font-size: 11px; }
-.log-qty { font-family: var(--display); font-size: 16px; font-weight: 700; }
-.log-qty.pos { color: var(--ok); }
-.log-qty.neg { color: var(--full); }
-.log-empty { color: var(--silver); font-size: 12px; padding: 24px 0; text-align: center; }
+.log-entry:last-child{border-bottom:none}
+.log-time{font-size:10px;color:var(--gold);padding-top:1px}
+.log-film{font-size:12px;font-weight:500;color:var(--white);margin-bottom:2px}
+.log-det{font-size:9px;color:var(--silver)}
+.log-q{font-family:var(--disp);font-size:15px;font-weight:700;text-align:right;padding-top:1px}
+.log-q.pos{color:var(--ok)}.log-q.neg{color:var(--full)}
+.log-empty{font-size:12px;color:var(--silver);padding:24px 0;text-align:center}
 
-/* ── BOTTOM NAV ── */
-.bottom-nav {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  background: var(--ink2); border-top: 0.5px solid var(--border2);
-  display: flex; z-index: 100;
+/* ── Loader overlay ───────────────────────────────── */
+.fb-loader{
+  position:fixed;inset:0;background:var(--ink);z-index:900;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
 }
-.nav-btn {
-  flex: 1; padding: 10px 0 12px; background: none; border: none;
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  cursor: pointer; color: var(--silver); transition: color .15s;
+.fb-loader.done{display:none}
+.fb-spinner{
+  width:32px;height:32px;border-radius:50%;
+  border:2px solid var(--border);border-top-color:var(--gold2);
+  animation:spin .8s linear infinite;
 }
-.nav-btn.active { color: var(--gold2); }
-.nav-icon { font-size: 18px; }
-.nav-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+@keyframes spin{to{transform:rotate(360deg)}}
+.fb-loader-txt{font-family:var(--disp);font-size:13px;font-weight:600;color:var(--silver)}
+.fb-loader-sub{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(122,143,170,.5)}
 
-/* ── RESPONSIVE ── */
-@media(max-width:480px){
-  .kpi-row { grid-template-columns: repeat(2,1fr); }
-  .film-grid { grid-template-columns: 1fr; }
-}
-@media(min-width:768px){
-  .bottom-nav { display: none; }
-  .topbar-center { display: flex; }
-}
-@media(max-width:767px){
-  .topbar-center { display: none; }
-}
+/* ── Realtime flash ───────────────────────────────── */
+.rt-flash{animation:flash .6s ease}
+@keyframes flash{0%{background:rgba(34,197,94,.15)}100%{background:inherit}}
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-/* ── VIP MODULE ─────────────────────────────────── */
-.view-btn.vip-btn.active { background: rgba(160,100,220,0.15); border-color: rgba(160,100,220,0.4); color: #C9A0F0; }
-.vip-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.vip-header { padding: 14px 20px 10px; flex-shrink: 0; }
-.vip-title { font-family: var(--display); font-size: 20px; font-weight: 700; color: #C9A0F0; margin-bottom: 2px; }
-.vip-sub { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--silver); margin-bottom: 14px; }
-.vip-kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px; }
-.vip-kpi { background: rgba(160,100,220,0.08); border: 0.5px solid rgba(160,100,220,0.2); border-radius: var(--radius); padding: 10px 12px; }
-.vip-kpi-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(160,100,220,0.7); margin-bottom: 4px; }
-.vip-kpi-val { font-family: var(--display); font-size: 22px; font-weight: 700; color: #C9A0F0; line-height: 1; }
-.vip-kpi-val.gold { color: var(--gold2); }
-.vip-kpi-val.ok { color: var(--ok); }
-.vip-kpi-val.warn { color: var(--warn); }
-.vip-filters { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 20px 10px; flex-shrink: 0; }
-.vip-filter {
-  font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
-  padding: 4px 11px; background: transparent; border: 0.5px solid var(--border);
-  color: var(--silver); cursor: pointer; border-radius: 20px; transition: all .15s;
-}
-.vip-filter.active { color: #C9A0F0; border-color: rgba(160,100,220,0.4); background: rgba(160,100,220,0.1); }
-.vip-search { font-family: var(--mono); font-size: 11px; padding: 5px 10px; background: var(--ink2); border: 0.5px solid var(--border); color: var(--cream); border-radius: var(--radius-sm); outline: none; flex: 1; min-width: 120px; }
-.vip-search::placeholder { color: var(--silver); }
-.vip-list-wrap { flex: 1; overflow-y: auto; padding: 0 20px 80px; }
-.org-block { margin-bottom: 16px; }
-.org-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 12px; background: rgba(160,100,220,0.08);
-  border: 0.5px solid rgba(160,100,220,0.2); border-radius: var(--radius) var(--radius) 0 0;
-  margin-bottom: 1px;
-}
-.org-name { font-family: var(--display); font-size: 13px; font-weight: 600; color: #C9A0F0; }
-.org-tag { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; border-radius: 10px; }
-.org-tag-festival { background: rgba(232,140,74,0.15); color: #F0A870; border: 0.5px solid rgba(232,140,74,0.3); }
-.org-tag-empresa  { background: rgba(91,143,232,0.12); color: var(--c2d); border: 0.5px solid rgba(91,143,232,0.25); }
-.org-tag-media    { background: rgba(231,76,60,0.1); color: #E88080; border: 0.5px solid rgba(231,76,60,0.2); }
-.org-tag-udem     { background: rgba(61,191,160,0.1); color: var(--c3d); border: 0.5px solid rgba(61,191,160,0.2); }
-.org-tag-indie    { background: rgba(200,149,42,0.12); color: var(--gold2); border: 0.5px solid rgba(200,149,42,0.25); }
-.org-stats { font-size: 10px; color: var(--silver); }
-
-.guest-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; background: var(--ink2);
-  border: 0.5px solid var(--border); border-top: none;
-  transition: background .15s; cursor: pointer;
-  position: relative;
-}
-.guest-row:last-child { border-radius: 0 0 var(--radius) var(--radius); }
-.guest-row:hover { background: var(--ink3); }
-.guest-row.checked-in { background: rgba(46,204,113,0.05); }
-
-.guest-avatar {
-  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--display); font-size: 12px; font-weight: 700;
-  background: rgba(160,100,220,0.15); color: #C9A0F0;
-  border: 0.5px solid rgba(160,100,220,0.3);
-}
-.guest-avatar.in { background: rgba(46,204,113,0.15); color: var(--ok); border-color: rgba(46,204,113,0.3); }
-
-.guest-info { flex: 1; min-width: 0; }
-.guest-name { font-size: 13px; font-weight: 500; color: var(--white); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.guest-name.in { color: var(--ok); }
-.guest-meta { font-size: 10px; color: var(--silver); }
-.guest-time { font-size: 10px; color: var(--gold); }
-
-.guest-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.checkin-toggle {
-  font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
-  padding: 5px 10px; border-radius: var(--radius-sm); cursor: pointer;
-  border: 0.5px solid; transition: all .15s;
-}
-.toggle-out { background: transparent; border-color: var(--border); color: var(--silver); }
-.toggle-out:hover { border-color: rgba(160,100,220,0.4); color: #C9A0F0; }
-.toggle-in { background: rgba(46,204,113,0.12); border-color: rgba(46,204,113,0.3); color: var(--ok); }
-
-/* companion rows */
-.companion-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 7px 12px 7px 46px;
-  background: rgba(255,255,255,0.015);
-  border: 0.5px solid var(--border); border-top: none;
-  transition: background .15s;
-}
-.companion-row:last-child { border-radius: 0 0 var(--radius) var(--radius); }
-.companion-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(160,100,220,0.4); flex-shrink: 0; }
-.companion-name { font-size: 12px; color: var(--silver); flex: 1; }
-.companion-badge { font-size: 9px; letter-spacing: .5px; padding: 2px 7px; border-radius: 10px; background: rgba(160,100,220,0.1); color: rgba(160,100,220,0.7); border: 0.5px solid rgba(160,100,220,0.2); }
-
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(200,149,42,.2);border-radius:2px}
 </style>
 </head>
 <body>
-<div class="app">
+
+<!-- LOADER -->
+<div class="fb-loader" id="fb-loader">
+  <div class="fb-spinner"></div>
+  <div class="fb-loader-txt">Conectando en tiempo real</div>
+  <div class="fb-loader-sub">Firebase · Parallax 2026</div>
+</div>
+
+<div class="app" id="app" style="display:none">
 
   <!-- TOPBAR -->
   <div class="topbar">
-    <div class="topbar-brand">
+    <div class="brand">
       <div class="brand-name">PARALLAX</div>
-      <div class="brand-sub">Control de Acceso</div>
+      <div class="brand-pill">Control de Acceso</div>
     </div>
-    <div class="topbar-center">
-      <button class="view-btn active" onclick="switchView('dashboard')">Dashboard</button>
-      <button class="view-btn" onclick="switchView('checkin')">Check-in</button>
-      <button class="view-btn" onclick="switchView('log')">Registro</button>
-      <button class="view-btn vip-btn" onclick="switchView('vip')">VIP</button>
+    <div class="top-nav">
+      <button class="tnav vip-nav active" onclick="go('vip')">★ VIP</button>
+      <button class="tnav" onclick="go('dash')">Dashboard</button>
+      <button class="tnav" onclick="go('ci')">Check-in</button>
+      <button class="tnav" onclick="go('log')">Registro</button>
     </div>
-    <div class="topbar-right">
-      <div class="sync-pill"><div class="sync-dot"></div><span id="sync-label">En vivo</span></div>
-      <div class="last-sync" id="last-sync-time"></div>
+    <div class="sync-area">
+      <div class="sync-dot" id="sdot"></div>
+      <div class="sync-txt" id="stxt">Conectando</div>
     </div>
   </div>
 
-  <!-- ── DASHBOARD ── -->
-  <div class="view active" id="view-dashboard">
-    <div class="dash-header">
-      <div class="dash-title">Estado del evento · 22 mayo 2026</div>
-      <div class="kpi-row" id="kpi-row"></div>
+  <!-- VIEWS -->
+  <div class="views">
+
+    <!-- ▸ VIP ──────────────────────────────────────── -->
+    <div class="view active" id="view-vip">
+      <div class="page-head">
+        <div class="page-title">Invitados Especiales</div>
+        <div class="page-sub">VIP · Industria · Prensa · Institución</div>
+        <div class="kpi-grid" id="vip-kpis"></div>
+      </div>
+      <div class="filter-row" id="vip-filter-row">
+        <input class="srch" type="search" placeholder="Buscar nombre u organización…" oninput="vipQ(this.value)" id="vip-srch">
+        <button class="fbtn fvip active" onclick="vipFilt('all',this)">Todos</button>
+        <button class="fbtn" onclick="vipFilt('festival',this)">Festival</button>
+        <button class="fbtn" onclick="vipFilt('empresa',this)">Empresa</button>
+        <button class="fbtn" onclick="vipFilt('media',this)">Media</button>
+        <button class="fbtn" onclick="vipFilt('udem',this)">UDEM</button>
+        <button class="fbtn" onclick="vipFilt('indie',this)">Independiente</button>
+      </div>
+      <div class="scroll-body" id="vip-list"></div>
     </div>
-    <div class="filter-bar">
-      <button class="filter-btn active" onclick="setFilter('all',this)">Todos</button>
-      <button class="filter-btn f-2d" onclick="setFilter('2D',this)">2D</button>
-      <button class="filter-btn f-3d" onclick="setFilter('3D',this)">3D</button>
-      <input class="search-input" type="text" placeholder="Buscar corto o alumno..." oninput="setSearch(this.value)" id="search-box">
+
+    <!-- ▸ DASHBOARD ──────────────────────────────────── -->
+    <div class="view" id="view-dash">
+      <div class="page-head">
+        <div class="page-title">Dashboard · Aforo en vivo</div>
+        <div class="page-sub">22 mayo 2026 · Teatro UDEM</div>
+        <div class="kpi-grid" id="dash-kpis"></div>
+      </div>
+      <div class="filter-row">
+        <button class="fbtn active" onclick="dashFilt('all',this)">Todos</button>
+        <button class="fbtn f2d" onclick="dashFilt('2D',this)">2D</button>
+        <button class="fbtn f3d" onclick="dashFilt('3D',this)">3D</button>
+        <input class="srch" type="search" placeholder="Buscar corto o alumno…" oninput="dashQ(this.value)">
+      </div>
+      <div class="scroll-body">
+        <div class="film-grid" id="film-grid"></div>
+      </div>
     </div>
-    <div class="film-grid" id="film-grid"></div>
-  </div>
 
-  <!-- ── CHECK-IN ── -->
-  <div class="view" id="view-checkin">
-    <div class="checkin-wrap">
-      <div class="checkin-title">Check-in</div>
-      <div class="checkin-sub">Registro de entrada · Parallax 2026</div>
+    <!-- ▸ CHECK-IN ───────────────────────────────────── -->
+    <div class="view" id="view-ci">
+      <div class="ci-wrap">
+        <div class="page-head" style="width:100%;padding:0 0 16px">
+          <div class="page-title">Check-in</div>
+          <div class="page-sub">Registro de entrada</div>
+        </div>
+        <select class="ci-select" id="ci-select" onchange="ciSelect()">
+          <option value="">— Selecciona un cortometraje —</option>
+        </select>
+        <div class="fi-panel" id="fi-panel">
+          <div class="fi-title" id="fi-title"></div>
+          <div class="fi-alumnos" id="fi-alumnos"></div>
+          <div class="fi-caprow">
+            <div>
+              <div class="fi-info-l">Disponible</div>
+              <div class="fi-big" id="fi-avail"></div>
+            </div>
+            <div class="fi-info">
+              <div class="fi-info-l">Ocupación</div>
+              <div class="fi-info-v" id="fi-det"></div>
+              <div class="fi-bar"><div class="fi-bar-fill" id="fi-bar"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="qty-row" id="qty-row" style="display:none">
+          <div class="qty-lbl">Personas a registrar</div>
+          <div class="qty-ctrl">
+            <button class="qbtn" onclick="cqty(-1)">−</button>
+            <div class="qval" id="qval">1</div>
+            <button class="qbtn" onclick="cqty(1)">+</button>
+          </div>
+        </div>
+        <button class="big-reg" id="big-reg" onclick="doCI()" disabled>Selecciona un cortometraje</button>
+        <button class="undo-btn" onclick="doUndo()">↩ Deshacer última entrada</button>
+      </div>
+    </div>
 
-      <div class="select-film-label">Seleccionar cortometraje</div>
-      <select class="film-select" id="film-select" onchange="onFilmSelect()">
-        <option value="">— Selecciona un corto —</option>
-      </select>
-
-      <div class="film-info-panel" id="film-info-panel">
-        <div class="fip-title" id="fip-title"></div>
-        <div class="fip-alumnos" id="fip-alumnos"></div>
-        <div class="fip-cap">
+    <!-- ▸ LOG ────────────────────────────────────────── -->
+    <div class="view" id="view-log">
+      <div class="page-head">
+        <div style="display:flex;justify-content:space-between;align-items:center">
           <div>
-            <div class="fip-cap-label">Disponible</div>
-            <div class="fip-big" id="fip-avail">—</div>
+            <div class="page-title">Registro de entradas</div>
+            <div class="page-sub">Historial en tiempo real</div>
           </div>
-          <div class="fip-cap-info">
-            <div class="fip-cap-label">Ocupación</div>
-            <div class="fip-cap-detail" id="fip-detail">—</div>
-            <div class="fip-bar-track"><div class="fip-bar-fill" id="fip-bar"></div></div>
-          </div>
+          <button onclick="clearLog()" style="font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:5px 10px;background:var(--full-bg);border:0.5px solid rgba(239,68,68,.3);color:var(--full);cursor:pointer;border-radius:var(--rsm)">Limpiar</button>
         </div>
       </div>
-
-      <div class="qty-row" id="qty-row" style="display:none">
-        <div class="qty-label">Personas a registrar</div>
-        <div class="qty-ctrl">
-          <button class="qty-btn" onclick="changeQty(-1)">−</button>
-          <div class="qty-val" id="qty-val">1</div>
-          <button class="qty-btn" onclick="changeQty(1)">+</button>
-        </div>
+      <div class="scroll-body">
+        <div id="log-body"></div>
       </div>
-
-      <button class="reg-btn" id="main-reg-btn" onclick="doCheckin()" disabled>Selecciona un corto</button>
-      <button class="btn-undo" style="width:100%;margin-top:8px;padding:8px;border-radius:var(--radius-sm);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;background:rgba(255,255,255,0.04);border:0.5px solid var(--border);color:var(--silver);cursor:pointer" onclick="doUndo()">↩ Deshacer última entrada</button>
     </div>
+
+  </div><!-- /views -->
+
+  <!-- BOTTOM NAV -->
+  <div class="bot-nav">
+    <button class="bnav vip-bnav active" onclick="go('vip')" id="bn-vip">
+      <div class="bnav-icon">★</div><div class="bnav-lbl">VIP</div>
+    </button>
+    <button class="bnav" onclick="go('dash')" id="bn-dash">
+      <div class="bnav-icon">⊞</div><div class="bnav-lbl">Dashboard</div>
+    </button>
+    <button class="bnav" onclick="go('ci')" id="bn-ci">
+      <div class="bnav-icon">✓</div><div class="bnav-lbl">Check-in</div>
+    </button>
+    <button class="bnav" onclick="go('log')" id="bn-log">
+      <div class="bnav-icon">≡</div><div class="bnav-lbl">Registro</div>
+    </button>
   </div>
 
-  <!-- ── LOG ── -->
-  <div class="view" id="view-log">
-    <div class="log-wrap">
-      <div class="log-title">Registro de entradas</div>
-      <div class="log-sub">Historial en tiempo real</div>
-      <div class="log-controls">
-        <button class="log-clear" onclick="clearLog()">Limpiar registro</button>
-        <span class="log-count" id="log-count">0 entradas</span>
-      </div>
-      <div id="log-entries"></div>
-    </div>
-  </div>
+</div><!-- /app -->
 
-</div>
-
-
-  <!-- ── VIP ── -->
-  <div class="view" id="view-vip">
-    <div class="vip-wrap">
-      <div class="vip-header">
-        <div class="vip-title">Invitados Especiales</div>
-        <div class="vip-sub">Acceso VIP · Industria · Prensa · Institución</div>
-        <div class="vip-kpis" id="vip-kpis"></div>
-      </div>
-      <div class="vip-filters" id="vip-filters">
-        <input class="vip-search" type="text" placeholder="Buscar invitado u organización..." oninput="vipSearch(this.value)" id="vip-search-box">
-      </div>
-      <div class="vip-list-wrap" id="vip-list"></div>
-    </div>
-  </div>
-
-<!-- BOTTOM NAV (mobile) -->
-<div class="bottom-nav">
-  <button class="nav-btn active" onclick="switchView('dashboard')" id="nav-dashboard">
-    <span class="nav-icon">⊞</span>
-    <span class="nav-label">Dashboard</span>
-  </button>
-  <button class="nav-btn" onclick="switchView('checkin')" id="nav-checkin">
-    <span class="nav-icon">✓</span>
-    <span class="nav-label">Check-in</span>
-  </button>
-  <button class="nav-btn" onclick="switchView('log')" id="nav-log">
-    <span class="nav-icon">≡</span>
-    <span class="nav-label">Registro</span>
-  </button>
-  <button class="nav-btn" onclick="switchView('vip')" id="nav-vip">
-    <span class="nav-icon">★</span>
-    <span class="nav-label">VIP</span>
-  </button>
-</div>
-
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- ═══════════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════════ -->
 <script>
-/* ══════════════════════════════════════════════════
-   DATA — Films with capacity & students
-   Capacidad por corto = alumnos del corto + sus invitados + proporción VIP
-   VIP (50) se distribuyen: 29 en 2D (proportional) + 21 en 3D
-   Fórmula: cap_corto ≈ alumnos_corto * (1 + avg_invitados_por_alumno) + cuota_vip
-   Usamos capacidad REAL calculada: aforo total bloque / num_cortos (simplificado operativamente)
-   Para máxima utilidad práctica, asignamos por alumno su numero real de invitados + cuota VIP proporcional
-   ══════════════════════════════════════════════════ */
+/* ── FIREBASE CONFIG ──────────────────────────────
+   Replace with your own Firebase project credentials.
+   Free Spark plan is sufficient for this event.
+   console.firebase.google.com → Add project → Realtime Database
+──────────────────────────────────────────────────── */
+const FB_CONFIG = {
+  apiKey: "AIzaSyCKIS0ou9NORRE-MaswP40X9grG8ES_0Ls",
+  authDomain: "parallax2026-4938d.firebaseapp.com",
+  projectId: "parallax2026-4938d",
+  storageBucket: "parallax2026-4938d.firebasestorage.app",
+  messagingSenderId: "429549056894",
+  appId: "1:429549056894:web:971b2421a484922178b92f"
+};
 
-const FILMS_RAW = [
-  { id:'afterlight', title:'Afterlight', bloque:'2D',
-    alumnos:['Lorena Santos Morales','Carmen Victoria Mora Cova','Carol Treviño Henric','Luana Montaña Martínez','María F. Márquez Oyervides','Ana Sofía Ibarra','Daniela Meléndez Garcia','Vanessa Cárdenas Torres','Gabriela Reyna Navar','Sofía Vázquez Vigil','Lorena Yañez Lara','Ximena Gómez Orta','Maria Echeagaray Garcia','Ian Aguilar Rodríguez','Alonso de León Margain'],
-    invitados: 58 },
-  { id:'battle', title:'Battle of the Batter', bloque:'2D',
-    alumnos:['Xenia Muñiz','Natalia Sofía Ríos Garza','Nadia Victoria Espinosa Tenorio','Michelle Aseret Díaz Sánchez','Caleb Ilan Martínez Ardila'],
-    invitados: 35 },
-  { id:'beatbox', title:'Beatbox', bloque:'2D',
-    alumnos:['Isaac Alejandro Arredondo Neri','Carla Roberta Gil Tinoco','Jesús Maximiliano Soto Gamboa','Raúl Torres Camarillo','Javier de la Garza Treviño','Isaac Boone Patlán'],
-    invitados: 30 },
-  { id:'flama', title:'Flama', bloque:'2D',
-    alumnos:['Ángel Emillio Martínez Bedia','Valeria Rodriguez Pariente','Ana Fernanda Llano Muñoz','Guillermo Enriquez Ibave','Miranda Garcia Rodriguez'],
-    invitados: 31 },
-  { id:'freshtzu', title:'Freshtzu', bloque:'2D',
-    alumnos:['Maryanna Márquez García','Valentina Deandar Tamez','Alan Gabriel Caballero Lozano','Annayram Márquez'],
-    invitados: 21 },
-  { id:'malita', title:"Malita Pa' Ti", bloque:'2D',
-    alumnos:['Emilia Galván López','Mia Regina Medrano Cruz','Zaira Fatima Garduño Herrera','Gael Antonio Dominguez Huerta','Constanza Abril Medrano Cruz','Leslie Yazmín Guevara Tolentino'],
-    invitados: 32 },
-  { id:'otterside', title:'Otterside', bloque:'2D',
-    alumnos:['Raul Maldonado','Emiliano Martínez Alanis','Luis Fernando Lozano Cantú','Oswaldo Andres Silvas Alcaraz','Samantha Cantú Morales','Jorge Gómez Sánchez','Carlos Andres Suarez Delgado'],
-    invitados: 37 },
-  { id:'ronnie', title:'Ronnie en la Luna', bloque:'2D',
-    alumnos:['Alessa Romo del Villar','Andrés Rosiles Maldonado','Victoria Nohemi Peña Ceseña','Valeria Zertuche','Carlos Alonso Serroque Palacios','Juan Pablo Martínez Leal','Daniel García Díaz'],
-    invitados: 29 },
-  { id:'blockhead', title:'Blockhead', bloque:'3D',
-    alumnos:['Fernando Manuel Cárdenas Segura'],
-    invitados: 5 },
-  { id:'contact', title:'Contact', bloque:'3D',
-    alumnos:['Gonzalo Ramos Ochoa'],
-    invitados: 5 },
-  { id:'escamas', title:'Escamas', bloque:'3D',
-    alumnos:['Julieta Hernández Sada','Jessica Isabel Córdova García','Sofía Téllez Brito','Andrea Zamarripa Treviño','Andrea Ortegón González','Raul Carrillo','Jorge Urencio'],
-    invitados: 50 },
-  { id:'ineedspace', title:'I Need Some Space', bloque:'3D',
-    alumnos:['Angela Abigail Aguirre Landin','Mariana Cordova Ramirez','Luisa Fernanda Treviño Montemayor','Serydia Yuleth Cortez Cedillo'],
-    invitados: 18 },
-  { id:'lonestar', title:'Lone Star Store', bloque:'3D',
-    alumnos:['Carlos Emiliano García Horta','María Fernanda Casillas Chávez','Elizabeth Abigail Aguirre'],
-    invitados: 13 },
-  { id:'recuerda', title:'Recuerda que te amo', bloque:'3D',
-    alumnos:['Isabella Guadalupe Puente Cantú','Emma Carolina Saucedo García','Lesly Gómez González','Ana Carolina Velázquez Reyna','Carlos Aarón Cantú González'],
-    invitados: 31 },
-  { id:'rex', title:'Rex', bloque:'3D',
-    alumnos:['Ángel Iván Torres Arévalo','Emilio Garcia Cabral','Mariano Emmanuel Mosqueda Garza'],
-    invitados: 14 },
-  { id:'ungiro', title:'Un giro en el agua', bloque:'3D',
-    alumnos:['Sin asistentes registrados'],
-    invitados: 0 },
+/* ── DEMO MODE ────────────────────────────────────
+   When Firebase is not configured, the app runs in
+   local demo mode — all data lives in memory and
+   updates instantly on the same device.
+   Replace FB_CONFIG above with real credentials to
+   enable true multi-device sync.
+──────────────────────────────────────────────────── */
+let db = null;
+let isDemo = false;
+let LOCAL = { screenings: {}, vip: {}, log: [] };
+
+function fbInit() {
+  try {
+    firebase.initializeApp(FB_CONFIG);
+    db = firebase.database();
+    db.ref('.info/connected').on('value', snap => {
+      const c = snap.val();
+      setSyncStatus(c ? 'live' : 'err', c ? 'En vivo' : 'Sin conexión');
+    });
+    bindFirebase();
+    document.getElementById('fb-loader').classList.add('done');
+    document.getElementById('app').style.display = 'flex';
+  } catch(e) {
+    console.warn('Firebase not configured — running in demo mode');
+    isDemo = true;
+    setSyncStatus('live','Demo local');
+    document.getElementById('fb-loader').classList.add('done');
+    document.getElementById('app').style.display = 'flex';
+    renderAll();
+  }
+}
+
+function setSyncStatus(state, txt) {
+  const dot = document.getElementById('sdot');
+  const label = document.getElementById('stxt');
+  dot.className = 'sync-dot ' + state;
+  label.className = 'sync-txt ' + state;
+  label.textContent = txt;
+}
+
+/* ── DATA ─────────────────────────────────────────── */
+const FILMS = [
+  {id:'afterlight', title:'Afterlight', bloque:'2D',
+   alumnos:['Lorena Santos M.','Carmen Mora C.','Carol Treviño H.','Luana Montaña M.','María F. Márquez','Ana Ibarra','Daniela Meléndez','Vanessa Cárdenas','Gabriela Reyna','Sofía Vázquez','Lorena Yañez','Ximena Gómez','María Echeagaray','Ian Aguilar','Alonso de León'],
+   inv:58},
+  {id:'battle', title:'Battle of the Batter', bloque:'2D',
+   alumnos:['Xenia Muñiz','Natalia Ríos','Nadia Espinosa','Michelle Díaz','Caleb Martínez'],inv:35},
+  {id:'beatbox', title:'Beatbox', bloque:'2D',
+   alumnos:['Isaac Arredondo','Carla Gil','Jesús Soto','Raúl Torres','Javier de la Garza','Isaac Boone'],inv:30},
+  {id:'flama', title:'Flama', bloque:'2D',
+   alumnos:['Ángel Martínez B.','Valeria Rodríguez','Ana Llano','Guillermo Enríquez','Miranda García'],inv:31},
+  {id:'freshtzu', title:'Freshtzu', bloque:'2D',
+   alumnos:['Maryanna Márquez','Valentina Deandar','Alan Caballero','Annayram Márquez'],inv:21},
+  {id:'malita', title:"Malita Pa' Ti", bloque:'2D',
+   alumnos:['Emilia Galván','Mia Medrano','Zaira Garduño','Gael Domínguez','Constanza Medrano','Leslie Guevara'],inv:32},
+  {id:'otterside', title:'Otterside', bloque:'2D',
+   alumnos:['Raul Maldonado','Emiliano Martínez','Luis Lozano','Oswaldo Silvas','Samantha Cantú','Jorge Gómez','Carlos Suárez'],inv:37},
+  {id:'ronnie', title:'Ronnie en la Luna', bloque:'2D',
+   alumnos:['Alessa Romo','Andrés Rosiles','Victoria Peña','Valeria Zertuche','Carlos Serroque','Juan Martínez','Daniel García'],inv:29},
+  {id:'blockhead', title:'Blockhead', bloque:'3D',alumnos:['Fernando Cárdenas Segura'],inv:5},
+  {id:'contact',   title:'Contact',   bloque:'3D',alumnos:['Gonzalo Ramos Ochoa'],inv:5},
+  {id:'escamas',   title:'Escamas',   bloque:'3D',
+   alumnos:['Julieta Hernández','Jessica Córdova','Sofía Téllez','Andrea Zamarripa','Andrea Ortegón','Raul Carrillo','Jorge Urencio'],inv:50},
+  {id:'ineedspace',title:'I Need Some Space',bloque:'3D',
+   alumnos:['Angela Aguirre','Mariana Córdova','Luisa Treviño','Serydia Cortez'],inv:18},
+  {id:'lonestar',  title:'Lone Star Store',bloque:'3D',
+   alumnos:['Carlos García Horta','María Casillas','Elizabeth Aguirre'],inv:13},
+  {id:'recuerda',  title:'Recuerda que te amo',bloque:'3D',
+   alumnos:['Isabella Puente','Emma Saucedo','Lesly Gómez','Ana Velázquez','Carlos Cantú'],inv:31},
+  {id:'rex',       title:'Rex',bloque:'3D',
+   alumnos:['Ángel Torres','Emilio García','Mariano Mosqueda'],inv:14},
+  {id:'ungiro',    title:'Un giro en el agua',bloque:'3D',alumnos:[],inv:0},
 ];
 
-// Capacity = exact alumnos + exact invitados from the form (no VIP added per film — VIP seats managed separately)
-// Max invitados por bloque: 8 en 2D, 12 en 3D
-const MAX_INV = { '2D': 8, '3D': 12 };
+const VIP_ORGS = [
+  {id:'santa-lucia',name:'Festival Internacional Santa Lucía',type:'festival',
+   guests:[{id:'sl1',name:'Eduardo Morales',comp:0},{id:'sl2',name:'Catalina Alvarez',comp:0},{id:'sl3',name:'Erika López',comp:0},{id:'sl4',name:'Araceli Mendivil',comp:0},{id:'sl5',name:'Mauricio Alvarez Sanchez',comp:0},{id:'sl6',name:'Miguel Ángel Aguilera',comp:0},{id:'sl7',name:'Caterina Aquino',comp:0}]},
+  {id:'hey-banco',name:'Hey Banco',type:'empresa',guests:[{id:'hb1',name:'Fedro Ceballos',comp:0}]},
+  {id:'keywords',name:'Keywords Studio',type:'empresa',guests:[{id:'kw1',name:'Alejandra Meza',comp:1}]},
+  {id:'pixel',name:'Pixel Perfect',type:'empresa',guests:[{id:'pp1',name:'Angel Hernandez',comp:0}]},
+  {id:'mimec',name:'MIMEC',type:'empresa',guests:[{id:'mm1',name:'David Davila',comp:0},{id:'mm2',name:'Mariana Ortiz',comp:0}]},
+  {id:'armass',name:'Armass Productions',type:'empresa',guests:[{id:'ar1',name:'Rubi Armass',comp:0}]},
+  {id:'indie',name:'Invitados Independientes',type:'indie',guests:[{id:'in1',name:'Leo Marz',comp:2},{id:'in2',name:'Angel Corona',comp:0}]},
+  {id:'elnorte',name:'El Norte',type:'media',guests:[{id:'en1',name:'Elena Gaytan',comp:0}]},
+  {id:'vital',name:'Vital Moves',type:'empresa',guests:[{id:'vm1',name:'Fernanda Garcia',comp:0},{id:'vm2',name:'Celilia Cardoso',comp:0}]},
+  {id:'udem',name:'UDEM',type:'udem',guests:[
+    {id:'ud1',name:'Carlos Basurto',comp:0},{id:'ud2',name:'Jessica Ochoa',comp:0},{id:'ud3',name:'Lesly Olan',comp:0},
+    {id:'ud4',name:'Eduardo Guizar',comp:0},{id:'ud5',name:'Diana Chapa',comp:0},{id:'ud6',name:'Monica Chapa',comp:0},
+    {id:'ud7',name:'Daniela Estrada',comp:0},{id:'ud8',name:'Maria Eugenia Santos',comp:0},{id:'ud9',name:'Cristobal Guerra',comp:0},
+    {id:'ud10',name:'Amparo Vazquez',comp:0},{id:'ud11',name:'Rosa Quiroz',comp:3},{id:'ud12',name:'Patricia Beltran',comp:0},
+    {id:'ud13',name:'Guillermo Lavin',comp:0},{id:'ud14',name:'Francisco González',comp:1},{id:'ud15',name:'Martin Garcia',comp:2},
+    {id:'ud16',name:'Angel Martinez',comp:0},{id:'ud17',name:'Abraham Lozano',comp:0},{id:'ud18',name:'Mariana Baidon',comp:0},
+    {id:'ud19',name:'Osmar Garduño',comp:0},{id:'ud20',name:'Abril Garza',comp:0},{id:'ud21',name:'Maria Fernanda Esquivel',comp:0},
+    {id:'ud22',name:'Jair Salazar',comp:0},
+  ]},
+];
 
-function calcCap(film) {
-  const validAlumnos = film.alumnos.filter(a => a !== 'Sin asistentes registrados').length;
-  return validAlumnos + film.invitados;
-}
+const TYPE_LABEL = {festival:'Festival',empresa:'Empresa',media:'Media',udem:'UDEM',indie:'Independiente'};
+const TYPE_CSS   = {festival:'tp-festival',empresa:'tp-empresa',media:'tp-media',udem:'tp-udem',indie:'tp-indie'};
 
-// State
-let STATE = {};
-let LOG = [];
-let filter = 'all';
-let search = '';
-let qty = 1;
-let selectedFilm = '';
-let syncing = false;
-let lastSave = Date.now();
+/* ── STATE ────────────────────────────────────────── */
+let SCREEN_STATE = {};  // {filmId: {used:n}}
+let VIP_STATE    = {};  // {guestId: {in:bool, comp:[{in:bool}], time:str}}
+let LOG_STATE    = [];  // [{time,title,bloque,qty}]
 
-// Init state from storage
-async function initState() {
-  try {
-    const saved = await window.storage.get('parallax-state-v2');
-    if (saved) STATE = JSON.parse(saved.value);
-  } catch(e) {}
-  try {
-    const savedLog = await window.storage.get('parallax-log-v2');
-    if (savedLog) LOG = JSON.parse(savedLog.value);
-  } catch(e) {}
+let dashFilter = 'all', dashSearch = '';
+let vipFilter  = 'all', vipSearch  = '';
+let ciFilmId   = '',    ciQty      = 1;
 
-  FILMS_RAW.forEach(f => {
-    if (!STATE[f.id]) STATE[f.id] = { used: 0 };
+/* ── FIREBASE BINDINGS ────────────────────────────── */
+function bindFirebase() {
+  db.ref('screenings').on('value', snap => {
+    SCREEN_STATE = snap.val() || {};
+    renderDash();
+    renderCI();
   });
-  render();
-  startPolling();
-}
-
-async function saveState() {
-  await window.storage.set('parallax-state-v2', JSON.stringify(STATE));
-  await window.storage.set('parallax-log-v2', JSON.stringify(LOG.slice(-200)));
-  lastSave = Date.now();
-  updateSyncLabel();
-}
-
-async function loadState() {
-  try {
-    const saved = await window.storage.get('parallax-state-v2');
-    if (saved) {
-      const remote = JSON.parse(saved.value);
-      let changed = false;
-      Object.keys(remote).forEach(k => {
-        if (!STATE[k] || remote[k].used !== STATE[k].used) { STATE[k] = remote[k]; changed = true; }
-      });
-      if (changed) render();
-    }
-    const savedLog = await window.storage.get('parallax-log-v2');
-    if (savedLog) {
-      const remoteLog = JSON.parse(savedLog.value);
-      if (remoteLog.length !== LOG.length) { LOG = remoteLog; renderLog(); }
-    }
-  } catch(e) {}
-}
-
-function startPolling() {
-  setInterval(loadState, 3000);
-  setInterval(updateSyncLabel, 1000);
-}
-
-function updateSyncLabel() {
-  const secs = Math.floor((Date.now() - lastSave) / 1000);
-  const el = document.getElementById('last-sync-time');
-  if (el) el.textContent = secs < 5 ? 'Ahora' : `Hace ${secs}s`;
-}
-
-// ── RENDER ──────────────────────────────────────────
-function getFilmData(f) {
-  const cap = calcCap(f);
-  const used = (STATE[f.id] || {used:0}).used;
-  const avail = Math.max(0, cap - used);
-  const pct = Math.min(100, Math.round(used / cap * 100));
-  const isClosed = cap === 0;
-  const status = isClosed ? 'closed' : avail === 0 ? 'full' : avail <= Math.ceil(cap * 0.15) ? 'warn' : 'ok';
-  return { cap, used, avail, pct, status };
-}
-
-function render() {
-  renderKPIs();
-  renderGrid();
-  renderCheckinPanel();
-  renderLog();
-}
-
-function renderKPIs() {
-  const all2D = FILMS_RAW.filter(f=>f.bloque==='2D');
-  const all3D = FILMS_RAW.filter(f=>f.bloque==='3D');
-  const sum = (films) => films.reduce((a,f) => {
-    const d = getFilmData(f);
-    return { used: a.used+d.used, cap: a.cap+d.cap, avail: a.avail+d.avail };
-  }, {used:0,cap:0,avail:0});
-  const s2 = sum(all2D), s3 = sum(all3D), sAll = sum(FILMS_RAW);
-  const el = document.getElementById('kpi-row');
-  el.innerHTML = `
-    <div class="kpi"><div class="kpi-label">Total entradas</div><div class="kpi-val gold">${sAll.used}</div><div class="kpi-sub">de ${sAll.cap} capacidad</div></div>
-    <div class="kpi"><div class="kpi-label">Disponible total</div><div class="kpi-val">${sAll.avail}</div><div class="kpi-sub">lugares libres</div></div>
-    <div class="kpi"><div class="kpi-label">Bloque 2D</div><div class="kpi-val" style="color:var(--c2d)">${s2.used}<span style="font-size:14px;color:var(--silver)">/${s2.cap}</span></div><div class="kpi-sub">${s2.avail} disponibles</div></div>
-    <div class="kpi"><div class="kpi-label">Bloque 3D</div><div class="kpi-val" style="color:var(--c3d)">${s3.used}<span style="font-size:14px;color:var(--silver)">/${s3.cap}</span></div><div class="kpi-sub">${s3.avail} disponibles</div></div>
-  `;
-}
-
-function renderGrid() {
-  const el = document.getElementById('film-grid');
-  const films = FILMS_RAW.filter(f => {
-    const matchFilter = filter === 'all' || f.bloque === filter;
-    const q = search.toLowerCase();
-    const matchSearch = !q || f.title.toLowerCase().includes(q) || f.alumnos.join(' ').toLowerCase().includes(q);
-    return matchFilter && matchSearch;
+  db.ref('vip').on('value', snap => {
+    VIP_STATE = snap.val() || {};
+    renderVIP();
   });
-
-  el.innerHTML = films.map(f => {
-    const d = getFilmData(f);
-    const sc = d.status;
-    const colorClass = sc === 'ok' ? 's-ok' : sc === 'warn' ? 's-warn' : 's-full';
-    const statusLabel = sc === 'ok' ? 'Disponible' : sc === 'warn' ? 'Últimos lugares' : sc === 'closed' ? 'Sin asistentes' : 'Lleno';
-    const fillClass = sc === 'ok' ? 'fill-ok' : sc === 'warn' ? 'fill-warn' : 'fill-full';
-    const availColor = sc === 'ok' ? 'var(--ok)' : sc === 'warn' ? 'var(--warn)' : 'var(--full)';
-    const alumnos = f.alumnos.join(' · ');
-    const isFullBtn = sc === 'full';
-    return `<div class="film-card status-${sc}" id="card-${f.id}">
-      <div class="card-accent accent-${f.bloque.toLowerCase()}"></div>
-      <div class="card-body">
-        <div class="card-top">
-          <span class="card-bloque-tag tag-${f.bloque.toLowerCase()}">${f.bloque}</span>
-          <span class="status-badge ${colorClass}">${statusLabel}</span>
-        </div>
-        <div class="card-title">${f.title}</div>
-        <div class="card-alumnos">${alumnos}</div>
-        <div class="cap-section">
-          <div class="cap-row">
-            <div class="cap-nums"><span class="used">${d.used}</span><span class="sep">/</span><span class="total">${d.cap}</span></div>
-            <div class="cap-avail"><span class="cap-avail-num" style="color:${availColor}">${d.avail}</span><span class="cap-avail-label">disponibles</span></div>
-          </div>
-          <div class="pct-bar"><div class="pct-fill ${fillClass}" style="width:${d.pct}%"></div></div>
-        </div>
-        ${isFullBtn
-          ? `<button class="card-btn btn-full" disabled>Lleno</button>`
-          : `<button class="card-btn btn-reg" onclick="quickReg('${f.id}',1)">+ Registrar entrada</button>`
-        }
-        <button class="card-btn btn-undo" onclick="quickUndo('${f.id}')">↩ Deshacer</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function renderCheckinPanel() {
-  const sel = document.getElementById('film-select');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— Selecciona un corto —</option>';
-  FILMS_RAW.forEach(f => {
-    const d = getFilmData(f);
-    sel.innerHTML += `<option value="${f.id}" ${cur===f.id?'selected':''}>[${f.bloque}] ${f.title} · ${d.avail} disponibles</option>`;
+  db.ref('eventlog').limitToLast(200).on('value', snap => {
+    LOG_STATE = [];
+    snap.forEach(c => LOG_STATE.push(c.val()));
+    renderLog();
   });
-  if (cur) updateFilmInfo(cur);
+  setSyncStatus('live','En vivo');
 }
 
-function onFilmSelect() {
-  selectedFilm = document.getElementById('film-select').value;
-  qty = 1;
-  document.getElementById('qty-val').textContent = qty;
-  updateFilmInfo(selectedFilm);
+/* ── DEMO STATE HELPERS ───────────────────────────── */
+function demoSet(path, val) {
+  const parts = path.split('/');
+  let obj = LOCAL;
+  parts.forEach((p,i) => { if(i < parts.length-1) { obj[p] = obj[p]||{}; obj = obj[p]; } });
+  obj[parts[parts.length-1]] = val;
 }
 
-function updateFilmInfo(fid) {
-  const panel = document.getElementById('film-info-panel');
-  const regBtn = document.getElementById('main-reg-btn');
-  const qtyRow = document.getElementById('qty-row');
-  if (!fid) {
-    panel.classList.remove('visible');
-    qtyRow.style.display = 'none';
-    regBtn.disabled = true;
-    regBtn.textContent = 'Selecciona un corto';
-    regBtn.className = 'reg-btn';
-    return;
-  }
-  const f = FILMS_RAW.find(x=>x.id===fid);
-  if (!f) return;
-  const d = getFilmData(f);
-  panel.classList.add('visible');
-  qtyRow.style.display = 'flex';
-  document.getElementById('fip-title').textContent = f.title;
-  document.getElementById('fip-alumnos').textContent = '👥 ' + f.alumnos.join(' · ');
-  const availEl = document.getElementById('fip-avail');
-  availEl.textContent = d.avail;
-  availEl.className = 'fip-big ' + (d.status==='ok'?'ok':d.status==='warn'?'warn':'full');
-  document.getElementById('fip-detail').textContent = `${d.used} entradas · ${d.cap} total`;
-  const bar = document.getElementById('fip-bar');
-  bar.style.width = d.pct + '%';
-  bar.style.background = d.status==='ok'?'var(--ok)':d.status==='warn'?'var(--warn)':'var(--full)';
+/* ── FILM HELPERS ─────────────────────────────────── */
+function filmCap(f) { return f.alumnos.length + f.inv; }
+function filmUsed(id) { return (SCREEN_STATE[id]||{used:0}).used; }
+function filmAvail(f) { return Math.max(0, filmCap(f) - filmUsed(f.id)); }
+function filmStatus(f) {
+  if(filmCap(f)===0) return 'none';
+  const a = filmAvail(f), c = filmCap(f);
+  return a===0 ? 'full' : a <= Math.ceil(c*.15) ? 'warn' : 'ok';
+}
 
-  if (d.avail === 0) {
-    regBtn.disabled = true;
-    regBtn.textContent = 'Corto lleno — Acceso bloqueado';
-    regBtn.className = 'reg-btn full-btn';
+/* ── ACTIONS ──────────────────────────────────────── */
+function regFilm(id, n) {
+  const f = FILMS.find(x=>x.id===id); if(!f) return;
+  const avail = filmAvail(f);
+  const add = Math.min(n, avail);
+  if(add <= 0) { toast('Aforo lleno — acceso bloqueado', 'err'); return; }
+  const newUsed = filmUsed(id) + add;
+  if(isDemo) {
+    SCREEN_STATE[id] = {used: newUsed};
+    renderDash(); renderCI();
   } else {
-    regBtn.disabled = false;
-    regBtn.textContent = `Registrar ${qty} persona${qty>1?'s':''}`;
-    regBtn.className = 'reg-btn';
+    db.ref('screenings/'+id).set({used: newUsed});
   }
+  const entry = {time: now(), title: f.title, bloque: f.bloque, qty: add};
+  if(isDemo) { LOG_STATE.push(entry); renderLog(); }
+  else db.ref('eventlog').push(entry);
+  toast(`+${add} registrado${add>1?'s':''} · ${f.title}`);
 }
 
-function renderLog() {
-  const el = document.getElementById('log-entries');
-  document.getElementById('log-count').textContent = `${LOG.length} entradas`;
-  if (!LOG.length) { el.innerHTML = '<div class="log-empty">Sin entradas registradas aún</div>'; return; }
-  el.innerHTML = [...LOG].reverse().map(e => {
-    const sign = e.qty > 0 ? '+' : '';
-    const cls = e.qty > 0 ? 'pos' : 'neg';
-    return `<div class="log-entry">
-      <div class="log-time">${e.time}</div>
-      <div><div class="log-film">${e.title}</div><div class="log-detail">${e.bloque} · ${e.alumnosStr}</div></div>
-      <div class="log-qty ${cls}">${sign}${e.qty}</div>
-    </div>`;
-  }).join('');
+function undoFilm(id) {
+  const f = FILMS.find(x=>x.id===id); if(!f) return;
+  const cur = filmUsed(id);
+  if(cur <= 0) { toast('Sin entradas para deshacer','err'); return; }
+  const newUsed = cur - 1;
+  if(isDemo) { SCREEN_STATE[id]={used:newUsed}; renderDash(); renderCI(); }
+  else db.ref('screenings/'+id).set({used:newUsed});
+  const entry = {time:now(),title:f.title,bloque:f.bloque,qty:-1};
+  if(isDemo) { LOG_STATE.push(entry); renderLog(); }
+  else db.ref('eventlog').push(entry);
+  toast(`↩ Deshecho · ${f.title}`);
 }
 
-// ── ACTIONS ──────────────────────────────────────────
-function quickReg(fid, n) {
-  const f = FILMS_RAW.find(x=>x.id===fid);
-  const d = getFilmData(f);
-  const toAdd = Math.min(n, d.avail);
-  if (toAdd <= 0) { showToast('Aforo lleno — acceso bloqueado', true); return; }
-  if (!STATE[fid]) STATE[fid] = {used:0};
-  STATE[fid].used += toAdd;
-  addLog(f, toAdd);
-  saveState();
-  render();
-  showToast(`+${toAdd} registrado${toAdd>1?'s':''} · ${f.title}`);
+function toggleVipGuest(gid) {
+  const g = VIP_ORGS.flatMap(o=>o.guests).find(x=>x.id===gid); if(!g) return;
+  const cur = (VIP_STATE[gid])||{in:false,comp:[],time:null};
+  const newIn = !cur.in;
+  const val = {...cur, in:newIn, time: newIn ? now() : null};
+  if(!val.comp) val.comp = Array(g.comp).fill({in:false});
+  if(isDemo) { VIP_STATE[gid]=val; renderVIP(); }
+  else db.ref('vip/'+gid).set(val);
+  const g2 = VIP_ORGS.flatMap(o=>o.guests).find(x=>x.id===gid);
+  toast(newIn ? `✓ ${g2.name} ingresó`:`↩ ${g2.name} revertido`, newIn?'':'info');
 }
 
-function quickUndo(fid) {
-  const f = FILMS_RAW.find(x=>x.id===fid);
-  if (!STATE[fid] || STATE[fid].used <= 0) { showToast('No hay entradas para deshacer', true); return; }
-  STATE[fid].used = Math.max(0, STATE[fid].used - 1);
-  addLog(f, -1);
-  saveState();
-  render();
-  showToast(`↩ Deshecho · ${f.title}`);
-}
-
-function doCheckin() {
-  if (!selectedFilm) return;
-  quickReg(selectedFilm, qty);
-  qty = 1;
-  document.getElementById('qty-val').textContent = 1;
-  updateFilmInfo(selectedFilm);
-}
-
-function doUndo() {
-  if (!selectedFilm) { showToast('Selecciona un corto primero', true); return; }
-  quickUndo(selectedFilm);
-  updateFilmInfo(selectedFilm);
-}
-
-function changeQty(delta) {
-  const f = selectedFilm ? FILMS_RAW.find(x=>x.id===selectedFilm) : null;
-  const maxAvail = f ? getFilmData(f).avail : 20;
-  qty = Math.max(1, Math.min(20, Math.min(maxAvail, qty + delta)));
-  document.getElementById('qty-val').textContent = qty;
-  const btn = document.getElementById('main-reg-btn');
-  if (btn && !btn.disabled) btn.textContent = `Registrar ${qty} persona${qty>1?'s':''}`;
-}
-
-function addLog(f, qty) {
-  const now = new Date();
-  const time = now.toLocaleTimeString('es-MX', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  LOG.push({ time, title: f.title, bloque: f.bloque, alumnosStr: f.alumnos.slice(0,3).join(', ')+(f.alumnos.length>3?'…':''), qty });
+function toggleComp(gid, ci) {
+  const g = VIP_ORGS.flatMap(o=>o.guests).find(x=>x.id===gid); if(!g) return;
+  const cur = VIP_STATE[gid]||{in:false,comp:[],time:null};
+  if(!cur.comp) cur.comp = Array(g.comp).fill({in:false});
+  const arr = [...cur.comp];
+  arr[ci] = {in: !(arr[ci]||{}).in};
+  const val = {...cur, comp:arr};
+  if(isDemo) { VIP_STATE[gid]=val; renderVIP(); }
+  else db.ref('vip/'+gid).set(val);
 }
 
 function clearLog() {
-  if (!confirm('¿Limpiar el registro de entradas?')) return;
-  LOG = [];
-  saveState();
-  renderLog();
+  if(!confirm('¿Limpiar el historial?')) return;
+  if(isDemo) { LOG_STATE=[]; renderLog(); }
+  else db.ref('eventlog').remove();
 }
 
-// ── UI HELPERS ──────────────────────────────────────
-function switchView(id) {
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('view-'+id).classList.add('active');
-  document.querySelectorAll('.view-btn').forEach(b=>{ if(b.textContent.toLowerCase().includes(id.slice(0,4))) b.classList.add('active'); });
-  const navEl = document.getElementById('nav-'+id);
-  if (navEl) navEl.classList.add('active');
-}
+/* ── RENDER ALL ───────────────────────────────────── */
+function renderAll() { renderVIP(); renderDash(); renderCI(); renderLog(); }
 
-function setFilter(f, btn) {
-  filter = f;
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderGrid();
-}
-
-function setSearch(val) {
-  search = val;
-  renderGrid();
-}
-
-let toastTimer;
-function showToast(msg, isErr=false) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'toast show' + (isErr?' err':'');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
-}
-
-// ── BOOT ──────────────────────────────────────────
-initState();
-
-/* ══════════════════════════════════
-   VIP MODULE DATA & LOGIC
-   ══════════════════════════════════ */
-const VIP_ORGS = [
-  { id:'santa-lucia', name:'Festival Internacional Santa Lucía', type:'festival',
-    guests:[
-      {id:'sl1',name:'Eduardo Morales',companions:0},
-      {id:'sl2',name:'Catalina Alvarez',companions:0},
-      {id:'sl3',name:'Erika López',companions:0},
-      {id:'sl4',name:'Araceli Mendivil',companions:0},
-      {id:'sl5',name:'Mauricio Alvarez Sanchez',companions:0},
-      {id:'sl6',name:'Miguel Ángel Aguilera',companions:0},
-      {id:'sl7',name:'Caterina Aquino',companions:0},
-    ]},
-  { id:'hey-banco', name:'Hey Banco', type:'empresa',
-    guests:[{id:'hb1',name:'Fedro Ceballos',companions:0}]},
-  { id:'keywords', name:'Keywords Studio', type:'empresa',
-    guests:[{id:'kw1',name:'Alejandra Meza',companions:1}]},
-  { id:'pixel', name:'Pixel Perfect', type:'empresa',
-    guests:[{id:'pp1',name:'Angel Hernandez',companions:0}]},
-  { id:'mimec', name:'MIMEC', type:'empresa',
-    guests:[{id:'mm1',name:'David Davila',companions:0},{id:'mm2',name:'Mariana Ortiz',companions:0}]},
-  { id:'armass', name:'Armass Productions', type:'empresa',
-    guests:[{id:'ar1',name:'Rubi Armass',companions:0}]},
-  { id:'indie', name:'Invitados Independientes', type:'indie',
-    guests:[{id:'in1',name:'Leo Marz',companions:2},{id:'in2',name:'Angel Corona',companions:0}]},
-  { id:'elnorte', name:'El Norte', type:'media',
-    guests:[{id:'en1',name:'Elena Gaytan',companions:0}]},
-  { id:'vital', name:'Vital Moves', type:'empresa',
-    guests:[{id:'vm1',name:'Fernanda Garcia',companions:0},{id:'vm2',name:'Celilia Cardoso',companions:0}]},
-  { id:'udem', name:'UDEM', type:'udem',
-    guests:[
-      {id:'ud1',name:'Carlos Basurto',companions:0},
-      {id:'ud2',name:'Jessica Ochoa',companions:0},
-      {id:'ud3',name:'Lesly Olan',companions:0},
-      {id:'ud4',name:'Eduardo Guizar',companions:0},
-      {id:'ud5',name:'Diana Chapa',companions:0},
-      {id:'ud6',name:'Monica Chapa',companions:0},
-      {id:'ud7',name:'Daniela Estrada',companions:0},
-      {id:'ud8',name:'Maria Eugenia Santos',companions:0},
-      {id:'ud9',name:'Cristobal Guerra',companions:0},
-      {id:'ud10',name:'Amparo Vazquez',companions:0},
-      {id:'ud11',name:'Rosa Quiroz',companions:3},
-      {id:'ud12',name:'Patricia Beltran',companions:0},
-      {id:'ud13',name:'Guillermo Lavin',companions:0},
-      {id:'ud14',name:'Francisco González',companions:1},
-      {id:'ud15',name:'Martin Garcia',companions:2},
-      {id:'ud16',name:'Angel Martinez',companions:0},
-      {id:'ud17',name:'Abraham Lozano',companions:0},
-      {id:'ud18',name:'Mariana Baidon',companions:0},
-      {id:'ud19',name:'Osmar Garduño',companions:0},
-      {id:'ud20',name:'Abril Garza',companions:0},
-      {id:'ud21',name:'Maria Fernanda Esquivel',companions:0},
-      {id:'ud22',name:'Jair Salazar',companions:0},
-    ]},
-];
-
-const TYPE_LABELS = {festival:'Festival',empresa:'Empresa',media:'Media',udem:'UDEM',indie:'Independiente'};
-const TYPE_CSS    = {festival:'org-tag-festival',empresa:'org-tag-empresa',media:'org-tag-media',udem:'org-tag-udem',indie:'org-tag-indie'};
-
-let VIP_STATE = {}; // guestId -> {in: bool, companions: [{in:bool}], time: str, note: str}
-let vipFilterType = 'all';
-let vipSearchQ = '';
-
-async function initVip() {
-  try {
-    const saved = await window.storage.get('parallax-vip-v1');
-    if (saved) VIP_STATE = JSON.parse(saved.value);
-  } catch(e) {}
-  renderVip();
-}
-
-async function saveVip() {
-  await window.storage.set('parallax-vip-v1', JSON.stringify(VIP_STATE));
-}
-
-async function loadVip() {
-  try {
-    const saved = await window.storage.get('parallax-vip-v1');
-    if (saved) {
-      const remote = JSON.parse(saved.value);
-      if (JSON.stringify(remote) !== JSON.stringify(VIP_STATE)) {
-        VIP_STATE = remote;
-        renderVip();
-      }
-    }
-  } catch(e) {}
-}
-
-function vipGs(id) {
-  return VIP_STATE[id] || {in: false, companions: [], time: null};
-}
-
-function initGuestState(g) {
-  if (!VIP_STATE[g.id]) {
-    VIP_STATE[g.id] = {in: false, companions: Array(g.companions).fill({in:false}), time: null};
-  } else if (!VIP_STATE[g.id].companions) {
-    VIP_STATE[g.id].companions = Array(g.companions).fill({in:false});
-  }
-  return VIP_STATE[g.id];
-}
-
-function toggleGuest(gid) {
-  const gs = VIP_STATE[gid] || {in:false,companions:[],time:null};
-  gs.in = !gs.in;
-  gs.time = gs.in ? new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) : null;
-  VIP_STATE[gid] = gs;
-  saveVip();
-  renderVip();
-  const g = VIP_ORGS.flatMap(o=>o.guests).find(x=>x.id===gid);
-  showToast(gs.in ? `✓ ${g.name} — ingresó` : `↩ ${g.name} — revertido`);
-}
-
-function toggleCompanion(gid, ci) {
-  const gs = VIP_STATE[gid] || {in:false,companions:[],time:null};
-  if (!gs.companions) gs.companions = [];
-  if (!gs.companions[ci]) gs.companions[ci] = {in:false};
-  gs.companions[ci] = {in: !gs.companions[ci].in};
-  VIP_STATE[gid] = gs;
-  saveVip();
-  renderVip();
-}
-
-function getVipStats() {
-  let totalGuests=0, totalCompanions=0, checkedIn=0, companionsIn=0;
-  VIP_ORGS.forEach(org => org.guests.forEach(g => {
-    totalGuests++;
-    totalCompanions += g.companions;
-    const gs = vipGs(g.id);
-    if (gs.in) checkedIn++;
-    if (gs.companions) gs.companions.forEach(c => { if(c && c.in) companionsIn++; });
-  }));
-  return {totalGuests, totalCompanions, checkedIn, companionsIn,
-    totalPeople: totalGuests + totalCompanions,
-    presentPeople: checkedIn + companionsIn};
-}
-
-function initials(name) {
-  return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
-}
-
-function renderVip() {
+/* ── RENDER VIP ───────────────────────────────────── */
+function renderVIP() {
   renderVipKPIs();
-  renderVipFilters();
   renderVipList();
 }
 
+function vipGS(id,comp) {
+  const s = VIP_STATE[id]||{in:false,comp:[],time:null};
+  if(!s.comp) s.comp = [];
+  return s;
+}
+
 function renderVipKPIs() {
-  const s = getVipStats();
-  document.getElementById('vip-kpis').innerHTML = `
-    <div class="vip-kpi"><div class="vip-kpi-label">Total invitados</div><div class="vip-kpi-val gold">${s.totalGuests}</div></div>
-    <div class="vip-kpi"><div class="vip-kpi-label">Con acompañantes</div><div class="vip-kpi-val">${s.totalPeople}</div></div>
-    <div class="vip-kpi"><div class="vip-kpi-label">Presentes</div><div class="vip-kpi-val ok">${s.presentPeople}</div></div>
-    <div class="vip-kpi"><div class="vip-kpi-label">Pendientes</div><div class="vip-kpi-val warn">${s.totalPeople - s.presentPeople}</div></div>
+  let tp=0,tc=0,pin=0,cin=0;
+  VIP_ORGS.forEach(o=>o.guests.forEach(g=>{
+    tp++; tc+=g.comp;
+    const s=vipGS(g.id);
+    if(s.in) pin++;
+    (s.comp||[]).forEach(c=>{ if(c&&c.in) cin++; });
+  }));
+  const total=tp+tc, present=pin+cin;
+  document.getElementById('vip-kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-l">Invitados</div><div class="kpi-v gold">${tp}</div></div>
+    <div class="kpi"><div class="kpi-l">Con acomp.</div><div class="kpi-v vip">${total}</div></div>
+    <div class="kpi"><div class="kpi-l">Presentes</div><div class="kpi-v ok">${present}</div></div>
+    <div class="kpi"><div class="kpi-l">Pendientes</div><div class="kpi-v warn">${total-present}</div></div>
   `;
 }
 
-function renderVipFilters() {
-  const types = ['all','festival','empresa','media','udem','indie'];
-  const labels = {all:'Todos',festival:'Festival',empresa:'Empresa',media:'Media',udem:'UDEM',indie:'Independiente'};
-  const filtersEl = document.getElementById('vip-filters');
-  const searchEl = document.getElementById('vip-search-box');
-  const btns = types.map(t =>
-    `<button class="vip-filter${vipFilterType===t?' active':''}" onclick="setVipFilter('${t}')">${labels[t]}</button>`
-  ).join('');
-  filtersEl.innerHTML = `<input class="vip-search" type="text" placeholder="Buscar invitado u organización..." oninput="vipSearch(this.value)" id="vip-search-box" value="${vipSearchQ}">` + btns;
-}
-
-function setVipFilter(t) { vipFilterType = t; renderVip(); }
-function vipSearch(v) { vipSearchQ = v; renderVipList(); }
-
 function renderVipList() {
-  const el = document.getElementById('vip-list');
-  const q = vipSearchQ.toLowerCase();
-  const orgs = VIP_ORGS.filter(org => {
-    const typeMatch = vipFilterType === 'all' || org.type === vipFilterType;
-    const searchMatch = !q || org.name.toLowerCase().includes(q) || org.guests.some(g => g.name.toLowerCase().includes(q));
-    return typeMatch && searchMatch;
+  const q = vipSearch.toLowerCase();
+  const orgs = VIP_ORGS.filter(o=>{
+    const tm = vipFilter==='all'||o.type===vipFilter;
+    const sm = !q||o.name.toLowerCase().includes(q)||o.guests.some(g=>g.name.toLowerCase().includes(q));
+    return tm&&sm;
   });
-
-  el.innerHTML = orgs.map(org => {
-    const orgGuests = org.guests.filter(g => !q || g.name.toLowerCase().includes(q) || org.name.toLowerCase().includes(q));
-    const orgChecked = orgGuests.filter(g => vipGs(g.id).in).length;
-    const orgTotal = orgGuests.reduce((a,g)=>a+1+g.companions,0);
-    const orgPresent = orgGuests.reduce((a,g)=>{
-      const gs = vipGs(g.id);
-      return a + (gs.in?1:0) + (gs.companions||[]).filter(c=>c&&c.in).length;
+  document.getElementById('vip-list').innerHTML = orgs.map(org=>{
+    const gs = org.guests.filter(g=>!q||g.name.toLowerCase().includes(q)||org.name.toLowerCase().includes(q));
+    const present = gs.reduce((a,g)=>{
+      const s=vipGS(g.id); return a+(s.in?1:0)+(s.comp||[]).filter(c=>c&&c.in).length;
     },0);
+    const total = gs.reduce((a,g)=>a+1+g.comp,0);
 
-    const rows = orgGuests.map(g => {
-      const gs = initGuestState(g);
-      const isIn = gs.in;
-      const ini = initials(g.name);
-      const gRow = `<div class="guest-row${isIn?' checked-in':''}">
-        <div class="guest-avatar${isIn?' in':''}">${ini}</div>
-        <div class="guest-info">
-          <div class="guest-name${isIn?' in':''}">${g.name}${g.companions>0?` <span style="font-size:10px;color:var(--silver)">+${g.companions} acomp.</span>`:''}</div>
-          <div class="guest-meta">${isIn?'<span class="guest-time">'+gs.time+'</span>':'Pendiente de ingreso'}</div>
+    const rows = gs.map((g,gi)=>{
+      const s = vipGS(g.id);
+      const ini = g.name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+      const isLast = gi===gs.length-1;
+      let html = `<div class="guest-row${s.in?' in':''}${isLast&&!g.comp?' ':''}" style="${isLast&&!g.comp?'border-radius:0 0 var(--r) var(--r)':''}">
+        <div class="g-avatar${s.in?' in':''}">${ini}</div>
+        <div class="g-info">
+          <div class="g-name${s.in?' in':''}">${g.name}${g.comp?` <span style="font-size:9px;color:var(--silver)">+${g.comp}</span>`:''}
+          </div>
+          <div class="${s.in?'g-time':'g-meta'}">${s.in?(s.time||'Ingresó'):'Pendiente'}</div>
         </div>
-        <div class="guest-right">
-          <button class="checkin-toggle ${isIn?'toggle-in':'toggle-out'}" onclick="toggleGuest('${g.id}')">${isIn?'✓ Ingresó':'Registrar'}</button>
-        </div>
+        <button class="chk-btn ${s.in?'chk-in':'chk-out'}" onclick="toggleVipGuest('${g.id}')">${s.in?'✓ Ingresó':'Registrar'}</button>
       </div>`;
-
-      const compRows = Array.from({length: g.companions}, (_,ci) => {
-        const cState = (gs.companions && gs.companions[ci]) || {in:false};
-        const cIn = cState.in;
-        return `<div class="companion-row">
-          <div class="companion-dot" style="${cIn?'background:var(--ok)':''}"></div>
-          <div class="companion-name" style="${cIn?'color:var(--ok)':''}">Acompañante ${ci+1} — ${g.name.split(' ')[0]}</div>
-          <button class="checkin-toggle ${cIn?'toggle-in':'toggle-out'}" style="font-size:8px;padding:3px 8px" onclick="toggleCompanion('${g.id}',${ci})">${cIn?'✓ Ingresó':'Registrar'}</button>
+      for(let ci=0;ci<g.comp;ci++){
+        const cs=(s.comp||[])[ci]||{in:false};
+        const isCompLast=ci===g.comp-1&&isLast;
+        html+=`<div class="companion-row${isCompLast?' last-row':''}">
+          <div class="c-dot${cs.in?' in':''}"></div>
+          <div class="c-name${cs.in?' in':''}">Acompañante ${ci+1} — ${g.name.split(' ')[0]}</div>
+          <button class="chk-btn ${cs.in?'chk-in':'chk-out'}" style="font-size:7px;padding:3px 7px" onclick="toggleComp('${g.id}',${ci})">${cs.in?'✓':'Reg.'}</button>
         </div>`;
-      }).join('');
-
-      return gRow + compRows;
+      }
+      return html;
     }).join('');
 
     return `<div class="org-block">
-      <div class="org-header">
-        <span class="org-name">${org.name}</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="org-stats">${orgPresent}/${orgTotal} presentes</span>
-          <span class="org-tag ${TYPE_CSS[org.type]}">${TYPE_LABELS[org.type]}</span>
+      <div class="org-hdr">
+        <div class="org-name">${org.name}</div>
+        <div class="org-right">
+          <span class="org-stat">${present}/${total}</span>
+          <span class="type-pill ${TYPE_CSS[org.type]}">${TYPE_LABEL[org.type]}</span>
         </div>
       </div>
       ${rows}
@@ -1122,31 +789,170 @@ function renderVipList() {
   }).join('');
 }
 
-// Patch switchView to also handle vip nav highlight
-const _origSwitch = switchView;
-switchView = function(id) {
-  _origSwitch(id);
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  const navEl = document.getElementById('nav-'+id);
-  if (navEl) navEl.classList.add('active');
-  document.querySelectorAll('.view-btn').forEach(b=>{
-    b.classList.remove('active');
-    if((id==='vip'&&b.classList.contains('vip-btn'))||
-       (id!=='vip'&&b.textContent.toLowerCase().startsWith(id.slice(0,3)))) b.classList.add('active');
+/* ── RENDER DASHBOARD ─────────────────────────────── */
+function renderDash() {
+  renderDashKPIs();
+  renderFilmGrid();
+}
+
+function renderDashKPIs() {
+  const f2=FILMS.filter(f=>f.bloque==='2D'), f3=FILMS.filter(f=>f.bloque==='3D');
+  const sum=fs=>fs.reduce((a,f)=>({u:a.u+filmUsed(f.id),c:a.c+filmCap(f)}),{u:0,c:0});
+  const s2=sum(f2),s3=sum(f3),sa=sum(FILMS);
+  document.getElementById('dash-kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-l">Entradas totales</div><div class="kpi-v gold">${sa.u}</div></div>
+    <div class="kpi"><div class="kpi-l">Disponible</div><div class="kpi-v">${sa.c-sa.u}</div></div>
+    <div class="kpi"><div class="kpi-l">Bloque 2D</div><div class="kpi-v c2d">${s2.u}<span style="font-size:12px;color:var(--silver)">/${s2.c}</span></div></div>
+    <div class="kpi"><div class="kpi-l">Bloque 3D</div><div class="kpi-v c3d">${s3.u}<span style="font-size:12px;color:var(--silver)">/${s3.c}</span></div></div>
+  `;
+}
+
+function renderFilmGrid() {
+  const q=dashSearch.toLowerCase();
+  const films=FILMS.filter(f=>{
+    const bm=dashFilter==='all'||f.bloque===dashFilter;
+    const sm=!q||f.title.toLowerCase().includes(q)||f.alumnos.join(' ').toLowerCase().includes(q);
+    return bm&&sm;
   });
-};
+  document.getElementById('film-grid').innerHTML=films.map(f=>{
+    const cap=filmCap(f),used=filmUsed(f.id),avail=filmAvail(f),pct=cap?Math.min(100,Math.round(used/cap*100)):0;
+    const st=filmStatus(f);
+    const stlbl=st==='ok'?'Disponible':st==='warn'?'Últimos lugares':st==='full'?'Lleno':'Sin asistentes';
+    const stcss=`st-${st}`;
+    const acolor=st==='ok'?'var(--ok)':st==='warn'?'var(--warn)':st==='full'?'var(--full)':'var(--silver)';
+    const pfcss=`pfill-${st==='none'?'ok':st}`;
+    const alStr=f.alumnos.slice(0,3).join(' · ')+(f.alumnos.length>3?` +${f.alumnos.length-3}`:'');
+    return `<div class="film-card s-${st}" id="fcard-${f.id}">
+      <div class="card-top-bar bar-${f.bloque.toLowerCase()}"></div>
+      <div class="card-body">
+        <div class="card-badges">
+          <span class="bloque-tag bt-${f.bloque.toLowerCase()}">${f.bloque}</span>
+          <span class="status-tag ${stcss}">${stlbl}</span>
+        </div>
+        <div class="card-title">${f.title}</div>
+        <div class="card-alumnos">${alStr||'Sin asistentes'}</div>
+        <div class="cap-row">
+          <div class="cap-main">${used}<span>/${cap}</span></div>
+          <div class="cap-avail">
+            <div class="cap-avail-n" style="color:${acolor}">${avail}</div>
+            <span class="cap-avail-l">disponibles</span>
+          </div>
+        </div>
+        <div class="pbar"><div class="pfill ${pfcss}" style="width:${pct}%"></div></div>
+        <div class="card-btns">
+          ${st==='full'||st==='none'
+            ? `<button class="cbtn cbtn-full" disabled>${st==='none'?'Sin asistentes':'Lleno'}</button>`
+            : `<button class="cbtn cbtn-reg" onclick="regFilm('${f.id}',1)">+ Registrar</button>`}
+          <button class="cbtn cbtn-undo" onclick="undoFilm('${f.id}')">↩</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
 
-// Patch polling to also sync VIP
-const _origPoll = loadState;
-const _patchedLoad = async function() {
-  await _origPoll();
-  await loadVip();
-};
-setInterval(_patchedLoad, 3000);
+/* ── RENDER CHECK-IN ──────────────────────────────── */
+function renderCI() {
+  const sel=document.getElementById('ci-select');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— Selecciona un cortometraje —</option>';
+  FILMS.forEach(f=>{
+    const a=filmAvail(f),c=filmCap(f);
+    sel.innerHTML+=`<option value="${f.id}"${cur===f.id?' selected':''}>[${f.bloque}] ${f.title} · ${a}/${c} disponibles</option>`;
+  });
+  if(cur) updateCIPanel(cur);
+}
 
-// Init VIP on load
-initVip();
+function ciSelect() {
+  ciFilmId=document.getElementById('ci-select').value;
+  ciQty=1; document.getElementById('qval').textContent=1;
+  updateCIPanel(ciFilmId);
+}
 
+function updateCIPanel(fid) {
+  const panel=document.getElementById('fi-panel');
+  const btn=document.getElementById('big-reg');
+  const qrow=document.getElementById('qty-row');
+  if(!fid){
+    panel.classList.remove('show'); qrow.style.display='none';
+    btn.disabled=true; btn.textContent='Selecciona un cortometraje'; btn.className='big-reg';
+    return;
+  }
+  const f=FILMS.find(x=>x.id===fid); if(!f) return;
+  const cap=filmCap(f),used=filmUsed(fid),avail=filmAvail(f),pct=cap?Math.min(100,Math.round(used/cap*100)):0;
+  const st=filmStatus(f);
+  panel.classList.add('show');
+  qrow.style.display='flex';
+  document.getElementById('fi-title').textContent=f.title;
+  document.getElementById('fi-alumnos').textContent=f.alumnos.join(' · ')||'Sin asistentes';
+  const av=document.getElementById('fi-avail');
+  av.textContent=avail; av.className='fi-big '+(st==='ok'?'ok':st==='warn'?'warn':'full');
+  document.getElementById('fi-det').textContent=`${used} entradas · ${cap} total`;
+  const bar=document.getElementById('fi-bar');
+  bar.style.width=pct+'%';
+  bar.style.background=st==='ok'?'var(--ok)':st==='warn'?'var(--warn)':'var(--full)';
+  if(avail===0||cap===0){
+    btn.disabled=true; btn.textContent=cap===0?'Sin asistentes registrados':'Aforo lleno — Bloqueado';
+    btn.className='big-reg is-full';
+  } else {
+    btn.disabled=false;
+    btn.textContent=`Registrar ${ciQty} persona${ciQty>1?'s':''}`;
+    btn.className='big-reg';
+  }
+}
+
+function doCI() { if(!ciFilmId) return; regFilm(ciFilmId,ciQty); ciQty=1; document.getElementById('qval').textContent=1; updateCIPanel(ciFilmId); }
+function doUndo() { if(!ciFilmId){ toast('Selecciona un corto primero','err'); return; } undoFilm(ciFilmId); updateCIPanel(ciFilmId); }
+function cqty(d) {
+  const f=ciFilmId?FILMS.find(x=>x.id===ciFilmId):null;
+  const max=f?filmAvail(f):20;
+  ciQty=Math.max(1,Math.min(20,Math.min(max,ciQty+d)));
+  document.getElementById('qval').textContent=ciQty;
+  const btn=document.getElementById('big-reg');
+  if(btn&&!btn.disabled) btn.textContent=`Registrar ${ciQty} persona${ciQty>1?'s':''}`;
+}
+
+/* ── RENDER LOG ───────────────────────────────────── */
+function renderLog() {
+  const el=document.getElementById('log-body');
+  if(!LOG_STATE.length){ el.innerHTML='<div class="log-empty">Sin entradas registradas aún</div>'; return; }
+  el.innerHTML=[...LOG_STATE].reverse().map(e=>{
+    const s=e.qty>0?'+':'';
+    return `<div class="log-entry">
+      <div class="log-time">${e.time||''}</div>
+      <div><div class="log-film">${e.title}</div><div class="log-det">${e.bloque}</div></div>
+      <div class="log-q ${e.qty>0?'pos':'neg'}">${s}${e.qty}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── NAV ──────────────────────────────────────────── */
+function go(id) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  document.querySelectorAll('.tnav').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.bnav').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tnav').forEach(b=>{ if(b.getAttribute('onclick').includes("'"+id+"'")) b.classList.add('active'); });
+  const bn=document.getElementById('bn-'+id);
+  if(bn) bn.classList.add('active');
+}
+
+function dashFilt(f,btn){ dashFilter=f; document.querySelectorAll('#view-dash .fbtn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderFilmGrid(); }
+function dashQ(v){ dashSearch=v; renderFilmGrid(); }
+function vipFilt(f,btn){ vipFilter=f; document.querySelectorAll('#vip-filter-row .fbtn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderVipList(); }
+function vipQ(v){ vipSearch=v; renderVipList(); }
+
+/* ── UTILS ────────────────────────────────────────── */
+function now(){ return new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+let toastTimer;
+function toast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className='toast show'+(type?' '+type:'');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2400);
+}
+
+/* ── BOOT ─────────────────────────────────────────── */
+fbInit();
 </script>
 </body>
 </html>
