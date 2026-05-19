@@ -122,6 +122,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;background:ra
           <label class="field-label" for="inp-email">Correo electrónico</label>
           <input class="field-input" id="inp-email" type="email" autocomplete="email" placeholder="nombre@correo.com" inputmode="email">
         </div>
+        <div id="c-procedencia-wrap">
+          <label class="field-label" for="inp-proc">¿De dónde nos visitas?</label>
+          <input class="field-input" id="inp-proc" type="text" placeholder="Universidad, empresa, estudio u organización" spellcheck="false" autocomplete="organization">
+        </div>
         <button class="confirm-btn" id="confirm-btn" onclick="doConfirm()">Confirmar mi asistencia</button>
         <div class="terms">Al confirmar, aceptas que tus datos quedarán registrados en la base de datos del evento.</div>
       </div>
@@ -238,7 +242,6 @@ const VIP = [
   {id:'ud14',name:'Francisco González',       org:'UDEM'},
   {id:'ud15',name:'Martin Garcia',            org:'UDEM'},
   {id:'ud16',name:'Angel Martinez',           org:'UDEM'},
-  {id:'ud17',name:'Abraham Lozano',           org:'UDEM'},
   {id:'ud18',name:'Mariana Baidon',           org:'UDEM'},
   {id:'ud19',name:'Osmar Garduño',            org:'UDEM'},
   {id:'ud20',name:'Abril Garza',              org:'UDEM'},
@@ -247,6 +250,8 @@ const VIP = [
   {id:'ud11c1',name:'Acompañante 1 · Rosa Quiroz',        org:'UDEM'},
   {id:'ud11c2',name:'Acompañante 2 · Rosa Quiroz',        org:'UDEM'},
   {id:'ud11c3',name:'Acompañante 3 · Rosa Quiroz',        org:'UDEM'},
+  {id:'ud11c4',name:'Acompañante 4 · Rosa Quiroz',        org:'UDEM'},
+  {id:'ud16c1',name:'Acompañante 1 · Angel Martinez',     org:'UDEM'},
   {id:'ud14c1',name:'Acompañante 1 · Francisco González', org:'UDEM'},
   {id:'ud15c1',name:'Acompañante 1 · Martin Garcia',      org:'UDEM'},
   {id:'ud15c2',name:'Acompañante 2 · Martin Garcia',      org:'UDEM'},
@@ -374,6 +379,7 @@ function setupVipForm() {
   const inp = $('inp-name');
   inp.value = vipData.name; inp.readOnly = true;
   $('c-cap').style.display = 'none';
+  const pw = $('c-procedencia-wrap'); if(pw) pw.style.display='none';
   setState('form');
 }
 
@@ -406,6 +412,8 @@ async function doConfirm() {
   const email = $('inp-email').value.trim();
   if(!name)  { shake('inp-name'); return; }
   if(!email || !email.includes('@') || !email.includes('.')) { shake('inp-email'); return; }
+  const procEl = $('inp-proc');
+  if(procEl && procEl.style.display !== 'none' && !procEl.value.trim()) { shake('inp-proc'); return; }
 
   const btn = $('confirm-btn');
   btn.disabled = true; btn.textContent = 'Verificando…';
@@ -417,8 +425,9 @@ async function doConfirm() {
         const snap = await db.ref('vip_checkins/'+TARGET).once('value');
         if(snap.val()?.checkedIn) { showDup(snap.val().name||vipData.name); return; }
         btn.textContent = 'Registrando…';
+        const vipProc = $('inp-proc')?.value?.trim() || '';
         await db.ref('vip_checkins/'+TARGET).set({
-          checkedIn:true, name:vipData.name, email, org:vipData.org, timeStr, ts, guestId:TARGET
+          checkedIn:true, name:vipData.name, email, procedencia:vipProc, org:vipData.org, timeStr, ts, guestId:TARGET
         });
         const cur = (await db.ref('vip/'+TARGET).once('value')).val()||{};
         await db.ref('vip/'+TARGET).set({...cur, in:true, time:timeStr});
@@ -447,11 +456,12 @@ async function doConfirm() {
           return {used:finalUsed};
         });
         if(!tx.committed) { setState('full'); return; }
-        const entry = {name,email,ts,timeStr,filmId:TARGET,bloque:filmData.b,filmTitle:filmData.t};
+        const proc = $('inp-proc')?.value?.trim() || '';
+        const entry = {name,email,procedencia:proc,ts,timeStr,filmId:TARGET,bloque:filmData.b,filmTitle:filmData.t};
         await Promise.all([
           db.ref('attendees/'+TARGET).push(entry),
           dedupRef.set(entry),
-          db.ref('eventlog').push({time:timeStr,title:filmData.t,bloque:filmData.b,qty:1,name,email})
+          db.ref('eventlog').push({time:timeStr,title:filmData.t,bloque:filmData.b,qty:1,name,email,procedencia:proc||''})
         ]);
         showSuccess(name, filmData.t, Math.max(0, currentCap-finalUsed));
       } else {
