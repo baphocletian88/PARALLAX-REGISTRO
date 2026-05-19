@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Parallax 2026 · Sistema de Acceso</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS — matched to Parallax web
+═══════════════════════════════════════ */
+:root {
+  /* Backgrounds */
+  --bg:       #000000;
+  --bg1:      #0A0A0A;
+  --bg2:      #111111;
+  --bg3:      #161616;
+  --bg4:      #1A1A1A;
+
+  /* Text */
+  --t1:  #FFFFFF;
+  --t2:  #A0A0A0;
+  --t3:  #666666;
+  --t4:  #444444;
+
+  /* Borders */
+  --b1:  rgba(255,255,255,0.10);
+  --b2:  rgba(255,255,255,0.06);
+  --b3:  rgba(255,255,255,0.04);
+
+  /* Purple — primary accent */
+  --pu:  #7C3AED;
+  --pu2: #9333EA;
+  --pu3: #A855F7;
+  --pub: rgba(124,58,237,0.15);
+  --pur: rgba(124,58,237,0.30);
+
+  /* Semantic */
+  --ok:  #22C55E;  --okb: rgba(34,197,94,0.10);  --okr: rgba(34,197,94,0.25);
+  --wn:  #F59E0B;  --wnb: rgba(245,158,11,0.10); --wnr: rgba(245,158,11,0.25);
+  --er:  #EF4444;  --erb: rgba(239,68,68,0.10);  --err: rgba(239,68,68,0.25);
+
+  /* Block accents */
+  --a2d: #6366F1;  --a2db: rgba(99,102,241,0.10); --a2dr: rgba(99,102,241,0.25);
+  --a3d: #10B981;  --a3db: rgba(16,185,129,0.10); --a3dr: rgba(16,185,129,0.25);
+
+  /* Radius */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --r-full: 9999px;
+
+  /* Type */
+  --ff: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Layout */
+  --nav-h: 56px;
+  --tab-h: 48px;
+}
+
+/* ═══════════════════════════════════════
+   RESET
+═══════════════════════════════════════ */
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+html, body {
+  height: 100%; background: var(--bg); color: var(--t1);
+  font-family: var(--ff); font-size: 14px; line-height: 1.5;
+  overflow: hidden; -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════ */
+.shell { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; position: relative; }
+
+/* Ambient gradient — matches Parallax website */
+.shell::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 100%, rgba(124,58,237,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 35% at 80% 100%, rgba(180,40,40,0.08) 0%, transparent 55%);
+}
+
+/* ═══════════════════════════════════════
+   TOPBAR — pill nav style
+═══════════════════════════════════════ */
+.topbar {
+  height: var(--nav-h); flex-shrink: 0; position: relative; z-index: 100;
+  display: flex; align-items: center; padding: 0 20px; gap: 16px;
+  background: rgba(0,0,0,0.85);
+  border-bottom: 0.5px solid var(--b1);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.brand-wrap { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pu3); }
+.brand-name { font-size: 13px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--t1); }
+.brand-badge {
+  font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 2px 8px; border-radius: var(--r-full);
+  border: 0.5px solid var(--b1); color: var(--t3);
+  display: none;
+}
+@media(min-width: 440px) { .brand-badge { display: inline-flex; } }
+
+.topbar-space { flex: 1; }
+
+.sync-area { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.sdot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--t4);
+  transition: background 0.3s;
+}
+.sdot.live { background: var(--ok); animation: sdot-pulse 2.5s infinite; }
+.sdot.err  { background: var(--er); }
+@keyframes sdot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+.stxt { font-size: 10px; font-weight: 500; letter-spacing: 0.5px; color: var(--t3); }
+.stxt.live { color: var(--ok); }
+.stxt.err  { color: var(--er); }
+
+/* ═══════════════════════════════════════
+   TAB NAV — pill style (matches website)
+═══════════════════════════════════════ */
+.tabnav {
+  height: var(--tab-h); flex-shrink: 0; position: relative; z-index: 90;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 12px; gap: 4px;
+  background: rgba(0,0,0,0.6); border-bottom: 0.5px solid var(--b2);
+  overflow-x: auto; scrollbar-width: none;
+}
+.tabnav::-webkit-scrollbar { display: none; }
+
+.tnav {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: var(--r-full);
+  font-size: 12px; font-weight: 500; letter-spacing: 0.2px;
+  color: var(--t2); background: transparent;
+  border: 0.5px solid transparent;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  min-height: 34px; touch-action: manipulation;
+}
+.tnav:hover { color: var(--t1); border-color: var(--b1); }
+.tnav.on {
+  color: var(--t1); background: var(--pu);
+  border-color: var(--pu); font-weight: 600;
+}
+.tnav.on.t2d { background: var(--a2d); border-color: var(--a2d); }
+.tnav.on.t3d { background: var(--a3d); border-color: var(--a3d); color: #000; }
+.tnav .tndot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════
+   VIEWS
+═══════════════════════════════════════ */
+.views { flex: 1; overflow: hidden; position: relative; z-index: 1; }
+.view { position: absolute; inset: 0; display: none; flex-direction: column; overflow: hidden; }
+.view.on { display: flex; }
+.vbody { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding: 20px 16px 100px; }
+@media(min-width: 640px) { .vbody { padding: 24px 24px 80px; } }
+
+/* ═══════════════════════════════════════
+   SECTION LABELS (matches site style)
+═══════════════════════════════════════ */
+.section-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+  padding: 4px 10px; border-radius: var(--r-full);
+  border: 0.5px solid var(--pur); color: var(--pu3);
+  background: var(--pub); margin-bottom: 14px;
+}
+.section-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--pu3); }
+
+/* ═══════════════════════════════════════
+   KPI CARDS
+═══════════════════════════════════════ */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
+@media(max-width: 560px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+.kpi {
+  background: var(--bg2); border: 0.5px solid var(--b1);
+  border-radius: var(--r-md); padding: 14px 16px;
+  transition: border-color 0.2s;
+}
+.kpi:hover { border-color: var(--b1); }
+.kpi-l { font-size: 10px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--t3); margin-bottom: 6px; }
+.kpi-v { font-size: 26px; font-weight: 700; line-height: 1; color: var(--t1); letter-spacing: -0.5px; }
+.kpi-v.vpu { color: var(--pu3); }
+.kpi-v.v2d { color: #818CF8; }
+.kpi-v.v3d { color: #34D399; }
+.kpi-v.vok { color: var(--ok); }
+.kpi-v.vwn { color: var(--wn); }
+.kpi-sub { font-size: 10px; color: var(--t3); margin-top: 3px; }
+
+/* ═══════════════════════════════════════
+   BLOCK HEADER
+═══════════════════════════════════════ */
+.blk-hdr {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; margin-bottom: 20px; padding-bottom: 18px;
+  border-bottom: 0.5px solid var(--b2);
+}
+.blk-hdr-left {}
+.blk-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+  padding: 3px 9px; border-radius: var(--r-full); margin-bottom: 8px;
+}
+.blk-tag-2d { background: var(--a2db); color: #818CF8; border: 0.5px solid var(--a2dr); }
+.blk-tag-3d { background: var(--a3db); color: #34D399; border: 0.5px solid var(--a3dr); }
+.blk-tag-vip { background: var(--pub); color: var(--pu3); border: 0.5px solid var(--pur); }
+.blk-title { font-size: 22px; font-weight: 700; color: var(--t1); letter-spacing: -0.5px; line-height: 1.1; }
+.blk-sub { font-size: 12px; color: var(--t3); margin-top: 4px; font-weight: 400; }
+.blk-hdr-right { text-align: right; flex-shrink: 0; }
+.blk-cap { font-size: 28px; font-weight: 700; color: var(--t1); letter-spacing: -1px; line-height: 1; }
+.blk-cap-l { font-size: 10px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--t3); margin-top: 3px; }
+
+/* ═══════════════════════════════════════
+   FILTER ROW
+═══════════════════════════════════════ */
+.frow { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.fpill {
+  font-size: 10px; font-weight: 500; letter-spacing: 0.5px;
+  padding: 5px 12px; border-radius: var(--r-full);
+  background: transparent; border: 0.5px solid var(--b1); color: var(--t2);
+  cursor: pointer; transition: all 0.15s; min-height: 30px; touch-action: manipulation;
+}
+.fpill:hover { color: var(--t1); border-color: rgba(255,255,255,0.2); }
+.fpill.on { color: var(--t1); background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+.srch {
+  font-family: var(--ff); font-size: 12px; font-weight: 400;
+  padding: 6px 12px; background: var(--bg2); border: 0.5px solid var(--b1);
+  color: var(--t1); border-radius: var(--r-full); outline: none;
+  min-height: 32px; flex: 1; min-width: 140px; transition: border-color 0.15s;
+}
+.srch:focus { border-color: rgba(255,255,255,0.2); }
+.srch::placeholder { color: var(--t3); }
+
+/* ═══════════════════════════════════════
+   FILM GRID + CARDS
+═══════════════════════════════════════ */
+.fgrid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+@media(max-width: 520px) { .fgrid { grid-template-columns: 1fr; } }
+
+.fcard {
+  background: var(--bg2); border: 0.5px solid var(--b1);
+  border-radius: var(--r-lg); overflow: hidden;
+  transition: border-color 0.2s, background 0.2s;
+}
+.fcard:hover { border-color: rgba(255,255,255,0.14); background: var(--bg3); }
+.fcard.sw { border-color: rgba(245,158,11,0.3); }
+.fcard.sf { border-color: rgba(239,68,68,0.3); }
+
+.fcard-stripe { height: 2px; }
+.s2d { background: var(--a2d); }
+.s3d { background: var(--a3d); }
+
+.fcard-body { padding: 16px; }
+.fcard-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; }
+
+.blq-pill { font-size: 9px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 8px; border-radius: var(--r-full); }
+.bp2d { background: var(--a2db); color: #818CF8; border: 0.5px solid var(--a2dr); }
+.bp3d { background: var(--a3db); color: #34D399; border: 0.5px solid var(--a3dr); }
+
+.st-pill { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; padding: 3px 8px; border-radius: var(--r-full); }
+.sp-ok { background: var(--okb); color: var(--ok); border: 0.5px solid var(--okr); }
+.sp-wn { background: var(--wnb); color: var(--wn); border: 0.5px solid var(--wnr); }
+.sp-er { background: var(--erb); color: var(--er); border: 0.5px solid var(--err); }
+.sp-no { background: var(--b3); color: var(--t3); border: 0.5px solid var(--b2); }
+
+.fcard-title { font-size: 15px; font-weight: 600; color: var(--t1); margin-bottom: 4px; line-height: 1.3; letter-spacing: -0.2px; }
+.fcard-alumnos { font-size: 11px; color: var(--t3); margin-bottom: 14px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.cap-row { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 8px; }
+.cap-left {}
+.cap-main { font-size: 22px; font-weight: 700; color: var(--t1); line-height: 1; letter-spacing: -0.5px; }
+.cap-main em { font-style: normal; font-size: 14px; font-weight: 400; color: var(--t3); }
+.cap-right { text-align: right; }
+.cap-rn { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+.cap-rl { font-size: 9px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--t3); display: block; margin-top: 2px; }
+
+.pbar { height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-bottom: 12px; }
+.pfill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+.p-ok { background: var(--ok); } .p-wn { background: var(--wn); } .p-er { background: var(--er); }
+
+.card-btns { display: flex; gap: 6px; }
+.cbtn {
+  flex: 1; font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+  padding: 9px 8px; border-radius: var(--r-sm); cursor: pointer;
+  border: 0.5px solid; transition: all 0.15s; min-height: 36px;
+  touch-action: manipulation; font-family: var(--ff);
+}
+.cb-reg { background: var(--pub); border-color: var(--pur); color: var(--pu3); }
+.cb-reg:active { background: rgba(124,58,237,0.25); }
+.cb-er  { background: var(--erb); border-color: var(--err); color: var(--er); cursor: not-allowed; }
+.cb-no  { background: var(--b3); border-color: var(--b2); color: var(--t4); cursor: not-allowed; }
+.cb-un  { background: transparent; border-color: var(--b1); color: var(--t3); }
+.cb-un:active { background: rgba(255,255,255,0.04); }
+
+/* ═══════════════════════════════════════
+   CHECK-IN PANEL
+═══════════════════════════════════════ */
+.ci-panel {
+  background: var(--bg2); border: 0.5px solid var(--b1);
+  border-radius: var(--r-lg); padding: 18px; margin-bottom: 20px;
+}
+.ci-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--t3); margin-bottom: 10px; }
+.ci-sel {
+  width: 100%; font-family: var(--ff); font-size: 13px; font-weight: 400;
+  padding: 11px 14px; background: var(--bg3); border: 0.5px solid var(--b1);
+  color: var(--t1); border-radius: var(--r-sm); outline: none; cursor: pointer;
+  min-height: 44px; transition: border-color 0.15s;
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%23666' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px;
+}
+.ci-sel:focus { border-color: rgba(255,255,255,0.2); }
+.ci-sel option { background: var(--bg2); }
+
+.fi-info { background: var(--bg3); border: 0.5px solid var(--b1); border-radius: var(--r-sm); padding: 14px; margin-top: 12px; display: none; }
+.fi-info.on { display: block; }
+.fi-title { font-size: 16px; font-weight: 700; color: var(--t1); margin-bottom: 4px; letter-spacing: -0.3px; }
+.fi-alumnos { font-size: 11px; color: var(--t3); margin-bottom: 12px; line-height: 1.5; }
+.fi-caprow { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
+.fi-avail { font-size: 36px; font-weight: 700; line-height: 1; letter-spacing: -1px; }
+.fi-avail.ok { color: var(--ok); } .fi-avail.wn { color: var(--wn); } .fi-avail.er { color: var(--er); }
+.fi-det { flex: 1; }
+.fi-det-l { font-size: 9px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--t3); margin-bottom: 3px; }
+.fi-det-v { font-size: 12px; color: var(--t2); }
+.fi-bar  { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.fi-bar-f { height: 100%; border-radius: 2px; transition: width 0.4s; }
+
+.qty-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.qty-lbl { font-size: 11px; font-weight: 500; color: var(--t2); flex: 1; }
+.qty-ctrl {
+  display: flex; align-items: center;
+  border: 0.5px solid var(--b1); border-radius: var(--r-sm); overflow: hidden;
+}
+.qbtn {
+  width: 40px; height: 40px; background: transparent; border: none;
+  font-size: 20px; font-weight: 300; color: var(--pu3); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s; touch-action: manipulation;
+}
+.qbtn:active { background: var(--pub); }
+.qval { width: 44px; text-align: center; font-size: 16px; font-weight: 700; color: var(--t1); }
+
+.reg-btn {
+  width: 100%; font-family: var(--ff); font-size: 14px; font-weight: 700;
+  letter-spacing: 0.3px; padding: 14px; border-radius: var(--r-sm);
+  background: var(--pu); border: none; color: #fff;
+  margin-top: 14px; min-height: 48px; cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s; touch-action: manipulation;
+}
+.reg-btn:active { transform: scale(0.98); }
+.reg-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.reg-btn.er { background: var(--erb); color: var(--er); border: 0.5px solid var(--err); }
+.undo-btn {
+  width: 100%; font-family: var(--ff); font-size: 11px; font-weight: 500;
+  letter-spacing: 0.5px; padding: 10px; border-radius: var(--r-sm);
+  background: transparent; border: 0.5px solid var(--b1); color: var(--t3);
+  margin-top: 8px; min-height: 38px; cursor: pointer; touch-action: manipulation;
+  transition: border-color 0.15s, color 0.15s;
+}
+.undo-btn:hover { border-color: rgba(255,255,255,0.15); color: var(--t2); }
+
+/* ═══════════════════════════════════════
+   OVERVIEW / DASHBOARD
+═══════════════════════════════════════ */
+.ov-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 24px; }
+@media(max-width: 520px) { .ov-grid { grid-template-columns: 1fr; } }
+
+.ov-card {
+  background: var(--bg2); border: 0.5px solid var(--b1);
+  border-radius: var(--r-lg); padding: 20px; cursor: pointer;
+  transition: border-color 0.2s, background 0.2s; position: relative; overflow: hidden;
+}
+.ov-card:hover { border-color: rgba(255,255,255,0.14); background: var(--bg3); }
+.ov-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.ov-card.c2d::before { background: var(--a2d); }
+.ov-card.c3d::before { background: var(--a3d); }
+.ov-card.cvip::before { background: var(--pu); }
+.ov-card-tag { font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--t3); margin-bottom: 10px; }
+.ov-card-n { font-size: 32px; font-weight: 700; line-height: 1; letter-spacing: -1px; margin-bottom: 2px; }
+.ov-card-n.n2d { color: #818CF8; } .ov-card-n.n3d { color: #34D399; } .ov-card-n.npu { color: var(--pu3); }
+.ov-card-l { font-size: 11px; color: var(--t3); margin-bottom: 14px; }
+.ov-pbar { height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-bottom: 12px; }
+.ov-pfill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+.f2d { background: var(--a2d); } .f3d { background: var(--a3d); } .fpu { background: var(--pu); }
+.ov-cta { font-size: 11px; font-weight: 500; color: var(--t3); display: flex; align-items: center; gap: 4px; }
+
+.ov-recent-head { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--t3); margin-bottom: 12px; }
+.ov-total-bar {
+  background: var(--bg2); border: 0.5px solid var(--b1);
+  border-radius: var(--r-md); padding: 16px 18px; margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+.ov-total-label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--t3); }
+.ov-total-nums { display: flex; align-items: baseline; gap: 4px; }
+.ov-total-n { font-size: 28px; font-weight: 700; color: var(--t1); letter-spacing: -1px; }
+.ov-total-cap { font-size: 14px; color: var(--t3); }
+.ov-total-pbar { flex: 1; min-width: 100px; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+.ov-total-fill { height: 100%; border-radius: 2px; background: var(--pu); transition: width 0.5s; }
+.ov-total-avail { font-size: 12px; font-weight: 600; color: var(--ok); white-space: nowrap; }
+
+/* ═══════════════════════════════════════
+   VIP MODULE
+═══════════════════════════════════════ */
+.org-block { margin-bottom: 12px; }
+.org-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; flex-wrap: wrap; gap: 8px;
+  background: var(--bg2); border: 0.5px solid var(--pur);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+.org-name { font-size: 13px; font-weight: 600; color: var(--t1); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.org-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.org-stat { font-size: 10px; color: var(--t3); }
+.type-pill { font-size: 8px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 8px; border-radius: var(--r-full); }
+.tp-f { background: rgba(251,146,60,0.10); color: #FB923C; border: 0.5px solid rgba(251,146,60,0.25); }
+.tp-e { background: var(--a2db); color: #818CF8; border: 0.5px solid var(--a2dr); }
+.tp-m { background: var(--erb); color: #F87171; border: 0.5px solid var(--err); }
+.tp-u { background: var(--a3db); color: #34D399; border: 0.5px solid var(--a3dr); }
+.tp-i { background: var(--pub); color: var(--pu3); border: 0.5px solid var(--pur); }
+
+.grow {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  background: var(--bg2); border: 0.5px solid var(--b1); border-top: none;
+  transition: background 0.15s;
+}
+.grow.in { background: rgba(34,197,94,0.04); }
+.grow:last-of-type:not(.crow) { border-radius: 0 0 var(--r-lg) var(--r-lg); }
+.gavatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  background: var(--pub); color: var(--pu3); border: 0.5px solid var(--pur);
+}
+.gavatar.in { background: var(--okb); color: var(--ok); border-color: var(--okr); }
+.ginfo { flex: 1; min-width: 0; }
+.gname { font-size: 13px; font-weight: 500; color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gname.in { color: var(--ok); }
+.gmeta { font-size: 10px; color: var(--t3); margin-top: 1px; }
+.gtime { font-size: 10px; color: #F59E0B; }
+.chk-btn {
+  font-family: var(--ff); font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+  padding: 6px 12px; border-radius: var(--r-full); cursor: pointer;
+  border: 0.5px solid; transition: all 0.15s; flex-shrink: 0;
+  min-height: 30px; touch-action: manipulation;
+}
+.chk-out { background: transparent; border-color: var(--b1); color: var(--t3); }
+.chk-out:hover { border-color: var(--pur); color: var(--pu3); }
+.chk-in { background: var(--okb); border-color: var(--okr); color: var(--ok); }
+
+.crow {
+  display: flex; align-items: center; gap: 8px; padding: 7px 14px 7px 50px;
+  background: rgba(124,58,237,0.02); border: 0.5px solid var(--b2); border-top: none;
+}
+.crow.clast { border-radius: 0 0 var(--r-lg) var(--r-lg); }
+.cdot { width: 5px; height: 5px; border-radius: 50%; background: var(--b1); flex-shrink: 0; }
+.cdot.in { background: var(--ok); }
+.cname { font-size: 11px; color: var(--t3); flex: 1; }
+.cname.in { color: var(--ok); }
+
+/* ═══════════════════════════════════════
+   LOG
+═══════════════════════════════════════ */
+.log-row {
+  display: grid; grid-template-columns: 56px 1fr 36px;
+  gap: 0 12px; padding: 10px 0;
+  border-bottom: 0.5px solid var(--b2); align-items: start;
+}
+.log-row:last-child { border-bottom: none; }
+.log-t { font-size: 10px; color: #F59E0B; padding-top: 1px; font-weight: 500; }
+.log-f { font-size: 13px; font-weight: 600; color: var(--t1); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log-d { font-size: 10px; color: var(--t3); }
+.log-q { font-size: 16px; font-weight: 700; text-align: right; padding-top: 1px; letter-spacing: -0.5px; }
+.log-q.p { color: var(--ok); } .log-q.n { color: var(--er); }
+.no-data { font-size: 13px; color: var(--t3); padding: 28px 0; text-align: center; }
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+#toast {
+  position: fixed; bottom: 72px; left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  font-family: var(--ff); font-size: 13px; font-weight: 600;
+  padding: 10px 20px; border-radius: var(--r-full);
+  background: var(--ok); color: #000;
+  opacity: 0; transition: opacity 0.2s, transform 0.2s;
+  z-index: 999; pointer-events: none;
+  white-space: nowrap; max-width: calc(100vw - 32px);
+  overflow: hidden; text-overflow: ellipsis;
+}
+#toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.e { background: var(--er); color: #fff; }
+#toast.i { background: var(--pu); color: #fff; }
+@media(min-width: 640px) { #toast { bottom: 20px; } }
+
+/* ═══════════════════════════════════════
+   LOADER
+═══════════════════════════════════════ */
+#loader {
+  position: fixed; inset: 0; background: var(--bg); z-index: 900;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+}
+.ld-icon { width: 40px; height: 40px; position: relative; }
+.ld-ring {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1.5px solid rgba(124,58,237,0.2); border-top-color: var(--pu3);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.ld-name { font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--t3); }
+
+/* ═══════════════════════════════════════
+   UTILS
+═══════════════════════════════════════ */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+::-webkit-scrollbar-track { background: transparent; }
+.sep { height: 0.5px; background: var(--b2); margin: 18px 0; }
+.log-head-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.log-head-title { font-size: 18px; font-weight: 700; color: var(--t1); letter-spacing: -0.5px; }
+.log-head-sub { font-size: 10px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--t3); margin-top: 2px; }
+.clr-btn {
+  font-family: var(--ff); font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+  padding: 7px 14px; background: var(--erb); border: 0.5px solid var(--err);
+  color: var(--er); cursor: pointer; border-radius: var(--r-full);
+  min-height: 34px; touch-action: manipulation;
+}
+
+/* ══ FILM DETAIL MODAL ═══════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 800;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+@media(min-width: 600px) { .modal-overlay { align-items: center; } }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--bg1); border: 0.5px solid var(--b1);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  width: 100%; max-width: 540px; max-height: 90vh;
+  display: flex; flex-direction: column;
+  transform: translateY(24px); transition: transform 0.25s;
+  overflow: hidden;
+}
+@media(min-width: 600px) {
+  .modal { border-radius: var(--r-xl); max-height: 80vh; }
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-header {
+  padding: 20px 20px 14px; flex-shrink: 0;
+  border-bottom: 0.5px solid var(--b2);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+}
+.modal-header-left { flex: 1; min-width: 0; }
+.modal-blq-tag { display: inline-flex; align-items: center; gap: 5px;
+  font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+  padding: 3px 9px; border-radius: var(--r-full); margin-bottom: 8px; }
+.modal-title { font-size: 20px; font-weight: 700; color: var(--t1); letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 4px; }
+.modal-meta { font-size: 11px; color: var(--t3); }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--b2); border: 0.5px solid var(--b1);
+  color: var(--t2); font-size: 16px; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s; touch-action: manipulation;
+}
+.modal-close:hover { background: rgba(255,255,255,0.1); }
+
+.modal-cap-strip {
+  padding: 14px 20px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 16px;
+  background: var(--bg2); border-bottom: 0.5px solid var(--b2);
+}
+.mcs-item { text-align: center; }
+.mcs-n { font-size: 24px; font-weight: 700; color: var(--t1); letter-spacing: -0.5px; line-height: 1; }
+.mcs-n.ok { color: var(--ok); } .mcs-n.wn { color: var(--wn); } .mcs-n.er { color: var(--er); }
+.mcs-l { font-size: 9px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--t3); margin-top: 3px; }
+.mcs-sep { width: 0.5px; background: var(--b1); align-self: stretch; flex-shrink: 0; }
+.mcs-bar-wrap { flex: 1; }
+.mcs-bar { height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+.mcs-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.mcs-bar-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--t3); }
+
+.modal-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0; }
+
+.modal-section { padding: 0 20px; }
+.modal-section-head {
+  font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--t3); padding: 14px 0 10px;
+  border-bottom: 0.5px solid var(--b2); margin-bottom: 0;
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; background: var(--bg1); z-index: 1;
+}
+.modal-count { font-size: 12px; font-weight: 600; color: var(--t2); }
+
+.modal-srch {
+  width: 100%; font-family: var(--ff); font-size: 13px;
+  padding: 10px 14px; background: var(--bg2); border: 0.5px solid var(--b1);
+  color: var(--t1); border-radius: var(--r-sm); outline: none;
+  margin: 10px 0; transition: border-color 0.15s;
+}
+.modal-srch:focus { border-color: rgba(255,255,255,0.2); }
+.modal-srch::placeholder { color: var(--t3); }
+
+.alumno-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 0.5px solid var(--b2);
+}
+.alumno-row:last-child { border-bottom: none; }
+.alumno-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--t2);
+  background: var(--bg3); border: 0.5px solid var(--b1);
+}
+.alumno-name { font-size: 13px; font-weight: 500; color: var(--t1); flex: 1; line-height: 1.3; }
+.alumno-num { font-size: 10px; color: var(--t3); }
+
+.modal-reg-btn {
+  width: 100%; font-family: var(--ff); font-size: 14px; font-weight: 700;
+  padding: 14px; border-radius: var(--r-sm); cursor: pointer;
+  background: var(--pu); border: none; color: #fff;
+  margin: 0; min-height: 50px; touch-action: manipulation;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.modal-reg-btn:active { transform: scale(0.98); }
+.modal-reg-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.modal-reg-btn.er { background: var(--erb); color: var(--er); border: 0.5px solid var(--err); }
+.modal-footer {
+  padding: 14px 20px 20px; flex-shrink: 0;
+  border-top: 0.5px solid var(--b2); background: var(--bg1);
+}
+.modal-footer-qty { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.modal-footer-qty-lbl { font-size: 11px; font-weight: 500; color: var(--t2); flex: 1; }
+.no-alumnos { font-size: 12px; color: var(--t3); padding: 16px 0; text-align: center; }
+
+/* Make cards clickable for detail */
+.fcard { cursor: pointer; }
+.fcard-body { pointer-events: none; }
+.card-btns, .card-btns * { pointer-events: all; }
+
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="ld-icon"><div class="ld-ring"></div></div>
+  <div class="ld-name">Parallax 2026</div>
+</div>
+
+<div class="shell" id="shell" style="display:none">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand-wrap">
+      <div class="brand-dot"></div>
+      <div class="brand-name">Parallax</div>
+      <div class="brand-badge">Sistema de Acceso</div>
+    </div>
+    <div class="topbar-space"></div>
+    <div class="sync-area">
+      <div class="sdot" id="sdot"></div>
+      <div class="stxt" id="stxt">Conectando</div>
+    </div>
+  </div>
+
+  <!-- TAB NAV — pill style -->
+  <div class="tabnav">
+    <button class="tnav on"    onclick="go('ov')"  id="tn-ov">Overview</button>
+    <button class="tnav t2d"   onclick="go('2d')"  id="tn-2d"><span class="tndot" style="background:#818CF8"></span>Bloque 2D</button>
+    <button class="tnav t3d"   onclick="go('3d')"  id="tn-3d"><span class="tndot" style="background:#34D399"></span>Bloque 3D</button>
+    <button class="tnav"       onclick="go('vip')" id="tn-vip"><span class="tndot" style="background:var(--pu3)"></span>VIP</button>
+    <button class="tnav"       onclick="go('log')" id="tn-log">Registro</button>
+  </div>
+
+  <!-- VIEWS -->
+  <div class="views">
+
+    <!-- ▸ OVERVIEW -->
+    <div class="view on" id="v-ov">
+      <div class="vbody">
+        <div class="section-badge"><span class="section-badge-dot"></span>Parallax 2026 · 22 mayo · Teatro UDEM</div>
+
+        <!-- Total capacity bar -->
+        <div class="ov-total-bar" id="ov-total"></div>
+
+        <!-- KPIs -->
+        <div class="kpis" id="ov-kpis"></div>
+
+        <!-- Block cards -->
+        <div class="ov-grid" id="ov-grid"></div>
+
+        <!-- Recent -->
+        <div class="ov-recent-head">Actividad reciente</div>
+        <div id="ov-log"></div>
+      </div>
+    </div>
+
+    <!-- ▸ BLOQUE 2D -->
+    <div class="view" id="v-2d">
+      <div class="vbody">
+        <div class="blk-hdr">
+          <div class="blk-hdr-left">
+            <div class="blk-tag blk-tag-2d">Bloque 2D · Animación</div>
+            <div class="blk-title">Animación 2D</div>
+            <div class="blk-sub">17:35 – 19:10 h · Teatro UDEM · 406 butacas</div>
+          </div>
+          <div class="blk-hdr-right">
+            <div class="blk-cap" id="h2d-cap">—</div>
+            <div class="blk-cap-l">Entradas / Cap.</div>
+          </div>
+        </div>
+
+        <div class="ci-panel">
+          <div class="ci-label">Registrar entrada</div>
+          <select class="ci-sel" id="sel-2d" onchange="ciSel('2d')">
+            <option value="">— Selecciona un cortometraje 2D —</option>
+          </select>
+          <div class="fi-info" id="fi-2d">
+            <div class="fi-title" id="fi-2d-name"></div>
+            <div class="fi-alumnos" id="fi-2d-alumnos"></div>
+            <div class="fi-caprow">
+              <div><div class="fi-det-l">Disponible</div><div class="fi-avail" id="fi-2d-av"></div></div>
+              <div class="fi-det">
+                <div class="fi-det-l">Ocupación</div>
+                <div class="fi-det-v" id="fi-2d-det"></div>
+                <div class="fi-bar"><div class="fi-bar-f" id="fi-2d-bar"></div></div>
+              </div>
+            </div>
+            <div class="qty-row">
+              <div class="qty-lbl">Personas a registrar</div>
+              <div class="qty-ctrl">
+                <button class="qbtn" onclick="cq('2d',-1)">−</button>
+                <div class="qval" id="q-2d">1</div>
+                <button class="qbtn" onclick="cq('2d',1)">+</button>
+              </div>
+            </div>
+          </div>
+          <button class="reg-btn" id="rb-2d" onclick="doReg('2d')" disabled>Selecciona un cortometraje</button>
+          <button class="undo-btn" onclick="doUndo('2d')">↩ Deshacer última entrada</button>
+        </div>
+
+        <div class="frow">
+          <input class="srch" type="search" placeholder="Buscar en Bloque 2D…" oninput="fq('2d',this.value)">
+        </div>
+        <div class="fgrid" id="grid-2d"></div>
+      </div>
+    </div>
+
+    <!-- ▸ BLOQUE 3D -->
+    <div class="view" id="v-3d">
+      <div class="vbody">
+        <div class="blk-hdr">
+          <div class="blk-hdr-left">
+            <div class="blk-tag blk-tag-3d">Bloque 3D · Animación</div>
+            <div class="blk-title">Animación 3D</div>
+            <div class="blk-sub">20:00 – 21:08 h · Teatro UDEM · 406 butacas</div>
+          </div>
+          <div class="blk-hdr-right">
+            <div class="blk-cap" id="h3d-cap">—</div>
+            <div class="blk-cap-l">Entradas / Cap.</div>
+          </div>
+        </div>
+
+        <div class="ci-panel">
+          <div class="ci-label">Registrar entrada</div>
+          <select class="ci-sel" id="sel-3d" onchange="ciSel('3d')">
+            <option value="">— Selecciona un cortometraje 3D —</option>
+          </select>
+          <div class="fi-info" id="fi-3d">
+            <div class="fi-title" id="fi-3d-name"></div>
+            <div class="fi-alumnos" id="fi-3d-alumnos"></div>
+            <div class="fi-caprow">
+              <div><div class="fi-det-l">Disponible</div><div class="fi-avail" id="fi-3d-av"></div></div>
+              <div class="fi-det">
+                <div class="fi-det-l">Ocupación</div>
+                <div class="fi-det-v" id="fi-3d-det"></div>
+                <div class="fi-bar"><div class="fi-bar-f" id="fi-3d-bar"></div></div>
+              </div>
+            </div>
+            <div class="qty-row">
+              <div class="qty-lbl">Personas a registrar</div>
+              <div class="qty-ctrl">
+                <button class="qbtn" onclick="cq('3d',-1)">−</button>
+                <div class="qval" id="q-3d">1</div>
+                <button class="qbtn" onclick="cq('3d',1)">+</button>
+              </div>
+            </div>
+          </div>
+          <button class="reg-btn" id="rb-3d" onclick="doReg('3d')" disabled>Selecciona un cortometraje</button>
+          <button class="undo-btn" onclick="doUndo('3d')">↩ Deshacer última entrada</button>
+        </div>
+
+        <div class="frow">
+          <input class="srch" type="search" placeholder="Buscar en Bloque 3D…" oninput="fq('3d',this.value)">
+        </div>
+        <div class="fgrid" id="grid-3d"></div>
+      </div>
+    </div>
+
+    <!-- ▸ VIP -->
+    <div class="view" id="v-vip">
+      <div class="vbody">
+        <div class="blk-hdr">
+          <div class="blk-hdr-left">
+            <div class="blk-tag blk-tag-vip">Invitados Especiales</div>
+            <div class="blk-title">VIP & Industria</div>
+            <div class="blk-sub">Festival · Empresa · Prensa · Universidad</div>
+          </div>
+          <div class="blk-hdr-right">
+            <div class="blk-cap" id="hvip-cap">—</div>
+            <div class="blk-cap-l">Presentes / Total</div>
+          </div>
+        </div>
+
+        <div class="kpis" id="vip-kpis"></div>
+
+        <div class="frow">
+          <input class="srch" type="search" placeholder="Buscar invitado…" oninput="vipQ(this.value)">
+          <button class="fpill on" onclick="vipF('all',this)">Todos</button>
+          <button class="fpill" onclick="vipF('festival',this)">Festival</button>
+          <button class="fpill" onclick="vipF('empresa',this)">Empresa</button>
+          <button class="fpill" onclick="vipF('media',this)">Media</button>
+          <button class="fpill" onclick="vipF('udem',this)">UDEM</button>
+          <button class="fpill" onclick="vipF('indie',this)">Indep.</button>
+        </div>
+        <div id="vip-list"></div>
+      </div>
+    </div>
+
+    <!-- ▸ LOG -->
+    <div class="view" id="v-log">
+      <div class="vbody">
+        <div class="log-head-row">
+          <div>
+            <div class="log-head-title">Registro de Entradas</div>
+            <div class="log-head-sub">Historial en tiempo real</div>
+          </div>
+          <button class="clr-btn" onclick="clrLog()">Limpiar</button>
+        </div>
+        <div id="log-body"></div>
+      </div>
+    </div>
+
+  </div><!-- /views -->
+
+  <!-- FILM DETAIL MODAL -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-blq-tag" id="m-blq-tag"></div>
+          <div class="modal-title" id="m-title"></div>
+          <div class="modal-meta" id="m-meta"></div>
+        </div>
+        <button class="modal-close" onclick="closeModal(null)" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-cap-strip" id="m-cap-strip"></div>
+      <div class="modal-body">
+        <div class="modal-section">
+          <div class="modal-section-head">
+            <span>Alumnos participantes</span>
+            <span class="modal-count" id="m-alu-count"></span>
+          </div>
+          <input class="modal-srch" type="search" id="m-srch" placeholder="Buscar alumno…" oninput="filterAlumnos(this.value)">
+          <div id="m-alumnos-list"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-qty">
+          <div class="modal-footer-qty-lbl">Personas a registrar</div>
+          <div class="qty-ctrl">
+            <button class="qbtn" onclick="cqModal(-1)">−</button>
+            <div class="qval" id="m-qty">1</div>
+            <button class="qbtn" onclick="cqModal(1)">+</button>
+          </div>
+        </div>
+        <button class="modal-reg-btn" id="m-reg-btn" onclick="doRegModal()">Registrar entrada</button>
+      </div>
+    </div>
+  </div>
+</div><!-- /shell -->
+
+<div id="toast"></div>
+
+<script>
+/* ══ FIREBASE CONFIG ══════════════════════════════════
+   Reemplaza con tus credenciales reales
+══════════════════════════════════════════════════════ */
+const FB_CFG = {
+  apiKey: "AIzaSyCKIS0ou9NORRE-MaswP40X9grG8ES_0Ls",
+  authDomain: "parallax2026-4938d.firebaseapp.com",
+  projectId: "parallax2026-4938d",
+  storageBucket: "parallax2026-4938d.firebasestorage.app",
+  messagingSenderId: "429549056894",
+  appId: "1:429549056894:web:971b2421a484922178b92f"
+};
+
+/* ══ CONSTANTS ════════════════════════════════════════ */
+const TEATRO_CAP = 406;  // Capacidad total Teatro UDEM
+
+/* ══ DATA — FILMS ════════════════════════════════════ */
+const FILMS = [
+  {id:'afterlight', b:'2D', t:'Afterlight',
+   a:['Lorena Santos M.','Carmen Mora C.','Carol Treviño H.','Luana Montaña M.','María F. Márquez','Ana Ibarra','Daniela Meléndez','Vanessa Cárdenas','Gabriela Reyna','Sofía Vázquez','Lorena Yañez','Ximena Gómez','María Echeagaray','Ian Aguilar','Alonso de León'], inv:58},
+  {id:'battle',     b:'2D', t:'Battle of the Batter',    a:['Xenia Muñiz','Natalia Ríos','Nadia Espinosa','Michelle Díaz','Caleb Martínez'], inv:35},
+  {id:'beatbox',    b:'2D', t:'Beatbox',                 a:['Isaac Arredondo','Carla Gil','Jesús Soto','Raúl Torres','Javier de la Garza','Isaac Boone'], inv:30},
+  {id:'flama',      b:'2D', t:'Flama',                   a:['Ángel Martínez B.','Valeria Rodríguez','Ana Llano','Guillermo Enríquez','Miranda García'], inv:31},
+  {id:'freshtzu',   b:'2D', t:'Freshtzu',                a:['Maryanna Márquez','Valentina Deandar','Alan Caballero','Annayram Márquez'], inv:21},
+  {id:'malita',     b:'2D', t:"Malita Pa' Ti",           a:['Emilia Galván','Mia Medrano','Zaira Garduño','Gael Domínguez','Constanza Medrano','Leslie Guevara'], inv:32},
+  {id:'otterside',  b:'2D', t:'Otterside',               a:['Raul Maldonado','Emiliano Martínez','Luis Lozano','Oswaldo Silvas','Samantha Cantú','Jorge Gómez','Carlos Suárez'], inv:37},
+  {id:'ronnie',     b:'2D', t:'Ronnie en la Luna',       a:['Alessa Romo','Andrés Rosiles','Victoria Peña','Valeria Zertuche','Carlos Serroque','Juan Martínez','Daniel García'], inv:29},
+  {id:'blockhead',  b:'3D', t:'Blockhead',               a:['Fernando Cárdenas Segura'], inv:5},
+  {id:'contact',    b:'3D', t:'Contact',                 a:['Gonzalo Ramos Ochoa'], inv:5},
+  {id:'escamas',    b:'3D', t:'Escamas',
+   a:['Julieta Hernández','Jessica Córdova','Sofía Téllez','Andrea Zamarripa','Andrea Ortegón','Raul Carrillo','Jorge Urencio'], inv:50},
+  {id:'ineedspace', b:'3D', t:'I Need Some Space',       a:['Angela Aguirre','Mariana Córdova','Luisa Treviño','Serydia Cortez'], inv:18},
+  {id:'lonestar',   b:'3D', t:'Lone Star Store',         a:['Carlos García H.','María Casillas','Elizabeth Aguirre'], inv:13},
+  {id:'recuerda',   b:'3D', t:'Recuerda que te amo',     a:['Isabella Puente','Emma Saucedo','Lesly Gómez','Ana Velázquez','Carlos Cantú'], inv:31},
+  {id:'rex',        b:'3D', t:'Rex',                     a:['Ángel Torres','Emilio García','Mariano Mosqueda'], inv:14},
+  {id:'ungiro',     b:'3D', t:'Un giro en el agua',      a:[], inv:0},
+];
+const F2 = FILMS.filter(f=>f.b==='2D');
+const F3 = FILMS.filter(f=>f.b==='3D');
+
+/* ══ DATA — VIP (Cecillia Cardoso corrected) ═════════ */
+const VORGS = [
+  {id:'sl', name:'Festival Internacional Santa Lucía', type:'festival',
+   guests:[{id:'sl1',name:'Eduardo Morales',comp:0},{id:'sl2',name:'Catalina Alvarez',comp:0},{id:'sl3',name:'Erika López',comp:0},{id:'sl4',name:'Araceli Mendivil',comp:0},{id:'sl5',name:'Mauricio Alvarez Sanchez',comp:0},{id:'sl6',name:'Miguel Ángel Aguilera',comp:0},{id:'sl7',name:'Caterina Aquino',comp:0}]},
+  {id:'hb', name:'Hey Banco',         type:'empresa', guests:[{id:'hb1',name:'Fedro Ceballos',comp:0}]},
+  {id:'kw', name:'Keywords Studio',   type:'empresa', guests:[{id:'kw1',name:'Alejandra Meza',comp:1}]},
+  {id:'pp', name:'Pixel Perfect',     type:'empresa', guests:[{id:'pp1',name:'Angel Hernandez',comp:0}]},
+  {id:'mm', name:'MIMEC',             type:'empresa', guests:[{id:'mm1',name:'David Davila',comp:0},{id:'mm2',name:'Mariana Ortiz',comp:0}]},
+  {id:'ar', name:'Armass Productions',type:'empresa', guests:[{id:'ar1',name:'Rubi Armass',comp:0}]},
+  {id:'in', name:'Invitados Independientes', type:'indie', guests:[{id:'in1',name:'Leo Marz',comp:2},{id:'in2',name:'Angel Corona',comp:0}]},
+  {id:'en', name:'El Norte',          type:'media',   guests:[{id:'en1',name:'Elena Gaytan',comp:0}]},
+  {id:'vm', name:'Vital Moves',       type:'empresa',
+   guests:[{id:'vm1',name:'Fernanda Garcia',comp:0},{id:'vm2',name:'Cecillia Cardoso',comp:0}]}, /* FIXED: Cecillia */
+  {id:'ud', name:'UDEM', type:'udem', guests:[
+    {id:'ud1',name:'Carlos Basurto',comp:0},{id:'ud2',name:'Jessica Ochoa',comp:0},{id:'ud3',name:'Lesly Olan',comp:0},
+    {id:'ud4',name:'Eduardo Guizar',comp:0},{id:'ud5',name:'Diana Chapa',comp:0},{id:'ud6',name:'Monica Chapa',comp:0},
+    {id:'ud7',name:'Daniela Estrada',comp:0},{id:'ud8',name:'Maria Eugenia Santos',comp:0},{id:'ud9',name:'Cristobal Guerra',comp:0},
+    {id:'ud10',name:'Amparo Vazquez',comp:0},{id:'ud11',name:'Rosa Quiroz',comp:3},{id:'ud12',name:'Patricia Beltran',comp:0},
+    {id:'ud13',name:'Guillermo Lavin',comp:0},{id:'ud14',name:'Francisco González',comp:1},{id:'ud15',name:'Martin Garcia',comp:2},
+    {id:'ud16',name:'Angel Martinez',comp:0},{id:'ud17',name:'Abraham Lozano',comp:0},{id:'ud18',name:'Mariana Baidon',comp:0},
+    {id:'ud19',name:'Osmar Garduño',comp:0},{id:'ud20',name:'Abril Garza',comp:0},{id:'ud21',name:'Maria Fernanda Esquivel',comp:0},
+    {id:'ud22',name:'Jair Salazar',comp:0},
+  ]},
+];
+const TLAB = {festival:'Festival',empresa:'Empresa',media:'Media',udem:'UDEM',indie:'Independiente'};
+const TCSS  = {festival:'tp-f',empresa:'tp-e',media:'tp-m',udem:'tp-u',indie:'tp-i'};
+
+/* ══ STATE ═══════════════════════════════════════════ */
+let SC = {}, VS = {}, LOG = [];
+let isDemo = false, db = null;
+let ci2 = {id:'',qty:1}, ci3 = {id:'',qty:1};
+let vipFilt = 'all', vipSrch = '';
+let srch = {'2d':'','3d':''};
+
+/* ══ FIREBASE ════════════════════════════════════════ */
+function init() {
+  try {
+    firebase.initializeApp(FB_CFG);
+    db = firebase.database();
+    db.ref('.info/connected').on('value', s => {
+      const c = s.val(); ss(c ? 'live' : 'err', c ? 'En vivo' : 'Sin conexión');
+    });
+    db.ref('screenings').on('value', s => { SC = s.val() || {}; rAll(); });
+    db.ref('vip').on('value', s => { VS = s.val() || {}; rVIP(); rOv(); });
+    db.ref('eventlog').limitToLast(100).on('value', s => {
+      LOG = []; s.forEach(c => LOG.push(c.val())); rLog(); rOvLog();
+    });
+  } catch(e) {
+    isDemo = true; ss('live', 'Demo local'); rAll();
+  }
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('shell').style.display = 'flex';
+}
+
+function ss(state, txt) {
+  const d = document.getElementById('sdot'), t = document.getElementById('stxt');
+  d.className = 'sdot ' + state; t.className = 'stxt ' + state; t.textContent = txt;
+}
+
+/* ══ HELPERS ═════════════════════════════════════════ */
+function fcap(f) { return f.a.length + f.inv; }
+function fused(id) { return (SC[id] || {used:0}).used; }
+function favail(f) { return Math.max(0, fcap(f) - fused(f.id)); }
+function fpct(f) { const c = fcap(f); return c ? Math.min(100, Math.round(fused(f.id)/c*100)) : 0; }
+function fst(f) {
+  if (!fcap(f)) return 'none';
+  const a = favail(f), c = fcap(f);
+  return a === 0 ? 'er' : a <= Math.ceil(c * .15) ? 'wn' : 'ok';
+}
+function now() { return new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+function ini(n) { return n.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
+function set$(id, val) { const e = document.getElementById(id); if(e) e.innerHTML = val; }
+
+function fbSet(path, val) {
+  if(isDemo) { const p = path.split('/'); let o = SC; if(p[0]==='vip') o = VS; /* simplified demo */ if(isDemo){ if(path.startsWith('screening')) { const id=p[1]; SC[id]=val; } else if(path.startsWith('vip')){ const id=p[1]; VS[id]=val; } rAll(); return; } }
+  return db.ref(path).set(val);
+}
+
+/* ══ ACTIONS ═════════════════════════════════════════ */
+function regFilm(id, n) {
+  const f = FILMS.find(x => x.id === id); if(!f) return;
+  const add = Math.min(n, favail(f));
+  if(add <= 0) { toast('Aforo lleno — acceso bloqueado', 'e'); return; }
+  const nu = fused(id) + add;
+  if(isDemo) { SC[id] = {used:nu}; rAll(); }
+  else db.ref('screenings/' + id).set({used: nu});
+  const entry = {time:now(), title:f.t, bloque:f.b, qty:add};
+  if(isDemo) { LOG.push(entry); rLog(); rOvLog(); }
+  else db.ref('eventlog').push(entry);
+  toast(`+${add} registrado${add>1?'s':''} · ${f.t}`);
+}
+
+function undoFilm(id) {
+  const f = FILMS.find(x => x.id === id); if(!f) return;
+  const cur = fused(id); if(cur <= 0) { toast('Sin entradas para deshacer', 'e'); return; }
+  if(isDemo) { SC[id] = {used: cur-1}; rAll(); }
+  else db.ref('screenings/' + id).set({used: cur-1});
+  const entry = {time:now(), title:f.t, bloque:f.b, qty:-1};
+  if(isDemo) { LOG.push(entry); rLog(); rOvLog(); }
+  else db.ref('eventlog').push(entry);
+  toast(`↩ Deshecho · ${f.t}`, 'i');
+}
+
+function togVip(gid) {
+  const g = VORGS.flatMap(o=>o.guests).find(x=>x.id===gid); if(!g) return;
+  const cur = VS[gid] || {in:false, comp:[], time:null};
+  const nin = !cur.in;
+  const val = {...cur, in:nin, time: nin ? now() : null};
+  if(!val.comp) val.comp = Array(g.comp).fill(null).map(()=>({in:false}));
+  if(isDemo) { VS[gid] = val; rVIP(); rOv(); }
+  else db.ref('vip/' + gid).set(val);
+  toast(nin ? `✓ ${g.name} ingresó` : `↩ ${g.name} revertido`, nin ? '' : 'i');
+}
+
+function togComp(gid, ci) {
+  const g = VORGS.flatMap(o=>o.guests).find(x=>x.id===gid); if(!g) return;
+  const cur = VS[gid] || {in:false, comp:[], time:null};
+  const arr = [...(cur.comp||[])];
+  while(arr.length <= ci) arr.push({in:false});
+  arr[ci] = {in: !(arr[ci]||{}).in};
+  const val = {...cur, comp:arr};
+  if(isDemo) { VS[gid]=val; rVIP(); rOv(); }
+  else db.ref('vip/' + gid).set(val);
+}
+
+function clrLog() {
+  if(!confirm('¿Limpiar el historial de entradas?')) return;
+  LOG = [];
+  if(!isDemo) db.ref('eventlog').remove();
+  rLog(); rOvLog();
+}
+
+/* ══ CHECK-IN ════════════════════════════════════════ */
+function ciSel(blk) {
+  const sel = document.getElementById('sel-' + blk);
+  const ci = blk === '2d' ? ci2 : ci3;
+  ci.id = sel.value; ci.qty = 1;
+  document.getElementById('q-' + blk).textContent = 1;
+  updCI(blk);
+}
+
+function updCI(blk) {
+  const ci = blk === '2d' ? ci2 : ci3;
+  const panel = document.getElementById('fi-' + blk);
+  const btn = document.getElementById('rb-' + blk);
+  if(!ci.id) {
+    panel.classList.remove('on'); btn.disabled = true;
+    btn.className = 'reg-btn'; btn.textContent = 'Selecciona un cortometraje'; return;
+  }
+  const f = FILMS.find(x => x.id === ci.id); if(!f) return;
+  const a = favail(f), c = fcap(f), s = fst(f), p = fpct(f);
+  panel.classList.add('on');
+  set$(('fi-'+blk+'-name'), f.t);
+  set$(('fi-'+blk+'-alumnos'), f.a.join(' · ') || 'Sin asistentes registrados');
+  const av = document.getElementById('fi-'+blk+'-av');
+  av.textContent = a; av.className = 'fi-avail ' + (s==='ok'?'ok':s==='wn'?'wn':'er');
+  set$(('fi-'+blk+'-det'), `${fused(f.id)} entradas · ${c} capacidad`);
+  const bar = document.getElementById('fi-'+blk+'-bar');
+  bar.style.width = p + '%';
+  bar.style.background = s==='ok'?'var(--ok)':s==='wn'?'var(--wn)':'var(--er)';
+  if(!c || a===0) {
+    btn.disabled = true; btn.className = 'reg-btn er';
+    btn.textContent = !c ? 'Sin asistentes' : 'Bloqueado — Aforo completo';
+  } else {
+    btn.disabled = false; btn.className = 'reg-btn';
+    btn.textContent = `Registrar ${ci.qty} persona${ci.qty>1?'s':''}`;
+  }
+}
+
+function cq(blk, d) {
+  const ci = blk==='2d' ? ci2 : ci3;
+  const f = ci.id ? FILMS.find(x=>x.id===ci.id) : null;
+  const mx = f ? favail(f) : 20;
+  ci.qty = Math.max(1, Math.min(20, Math.min(mx, ci.qty+d)));
+  document.getElementById('q-'+blk).textContent = ci.qty;
+  const btn = document.getElementById('rb-'+blk);
+  if(!btn.disabled) btn.textContent = `Registrar ${ci.qty} persona${ci.qty>1?'s':''}`;
+}
+
+function doReg(blk) {
+  const ci = blk==='2d' ? ci2 : ci3;
+  if(!ci.id) return;
+  regFilm(ci.id, ci.qty);
+  ci.qty = 1; document.getElementById('q-'+blk).textContent = 1; updCI(blk);
+}
+
+function doUndo(blk) {
+  const ci = blk==='2d' ? ci2 : ci3;
+  if(!ci.id) { toast('Selecciona un corto primero', 'e'); return; }
+  undoFilm(ci.id); updCI(blk);
+}
+
+/* ══ RENDER — FILM CARD ══════════════════════════════ */
+function filmCard(f) {
+  const a = favail(f), c = fcap(f), s = fst(f), p = fpct(f);
+  const slab = s==='ok' ? 'Disponible' : s==='wn' ? 'Últimos lugares' : s==='er' ? 'Lleno' : 'Sin asistentes';
+  const scss = 'sp-' + (s==='none'?'no':s==='er'?'er':s==='wn'?'wn':'ok');
+  const ac = s==='ok'?'var(--ok)':s==='wn'?'var(--wn)':s==='er'?'var(--er)':'var(--t4)';
+  const pcss = 'p-' + (s==='ok'?'ok':s==='wn'?'wn':'er');
+  const alStr = f.a.slice(0,3).join(' · ') + (f.a.length>3?` +${f.a.length-3}`:'');
+  const blqCss = f.b==='2D' ? 'bp2d' : 'bp3d';
+  const strpCss = f.b==='2D' ? 's2d' : 's3d';
+  return `<div class="fcard${s==='wn'?' sw':s==='er'?' sf':''}">
+    <div class="fcard-stripe ${strpCss}"></div>
+    <div class="fcard-body">
+      <div class="fcard-top">
+        <span class="blq-pill ${blqCss}">${f.b}</span>
+        <span class="st-pill ${scss}">${slab}</span>
+      </div>
+      <div class="fcard-title">${f.t}</div>
+      <div class="fcard-alumnos">${alStr || 'Sin asistentes'}</div>
+      <div class="cap-row">
+        <div class="cap-left"><div class="cap-main">${fused(f.id)}<em>/${c}</em></div></div>
+        <div class="cap-right">
+          <div class="cap-rn" style="color:${ac}">${a}</div>
+          <span class="cap-rl">disponibles</span>
+        </div>
+      </div>
+      <div class="pbar"><div class="pfill ${pcss}" style="width:${p}%"></div></div>
+      <div class="card-btns">
+        ${s==='er'||s==='none'
+          ? `<button class="cbtn ${s==='none'?'cb-no':'cb-er'}" disabled>${s==='none'?'Sin asistentes':'Lleno'}</button>`
+          : `<button class="cbtn cb-reg" onclick="regFilm('${f.id}',1)">+ Registrar</button>`}
+        <button class="cbtn cb-un" onclick="undoFilm('${f.id}')">↩</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ══ RENDER — GRIDS ══════════════════════════════════ */
+function rGrid(blk) {
+  const films = blk==='2d' ? F2 : F3;
+  const q = srch[blk].toLowerCase();
+  const el = document.getElementById('grid-' + blk);
+  const filtered = films.filter(f => !q || f.t.toLowerCase().includes(q) || f.a.join(' ').toLowerCase().includes(q));
+  el.innerHTML = filtered.map(filmCard).join('');
+}
+
+function rBlkHeader(blk) {
+  const films = blk==='2d' ? F2 : F3;
+  const tot = films.reduce((a,f) => a+fused(f.id), 0);
+  const cap = films.reduce((a,f) => a+fcap(f), 0);
+  set$(('h'+blk+'-cap'), `${tot} / ${cap}`);
+}
+
+function rSelects() {
+  ['2d','3d'].forEach(blk => {
+    const films = blk==='2d' ? F2 : F3;
+    const sel = document.getElementById('sel-' + blk);
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">— Selecciona un cortometraje ${blk.toUpperCase()} —</option>`;
+    films.forEach(f => {
+      const a = favail(f), c = fcap(f);
+      sel.innerHTML += `<option value="${f.id}"${cur===f.id?' selected':''}>${f.t} · ${a}/${c} disp.</option>`;
+    });
+    if(cur) updCI(blk);
+  });
+}
+
+/* ══ RENDER — OVERVIEW ═══════════════════════════════ */
+function rOv() {
+  const u2 = F2.reduce((a,f)=>a+fused(f.id),0), c2 = F2.reduce((a,f)=>a+fcap(f),0);
+  const u3 = F3.reduce((a,f)=>a+fused(f.id),0), c3 = F3.reduce((a,f)=>a+fcap(f),0);
+  let vpin=0, vtot=0;
+  VORGS.forEach(o=>o.guests.forEach(g=>{
+    vtot += 1+g.comp;
+    const s = VS[g.id]||{in:false,comp:[]};
+    if(s.in) vpin++;
+    (s.comp||[]).forEach(c=>{if(c&&c.in)vpin++;});
+  }));
+  const totalIn = u2 + u3 + vpin;
+  const pTotal = Math.round(totalIn / TEATRO_CAP * 100);
+
+  // Total bar
+  set$('ov-total', `
+    <div class="ov-total-label">Aforo Total · Teatro UDEM</div>
+    <div class="ov-total-nums">
+      <div class="ov-total-n">${totalIn}</div>
+      <div class="ov-total-cap"> / ${TEATRO_CAP}</div>
+    </div>
+    <div class="ov-total-pbar"><div class="ov-total-fill" style="width:${pTotal}%"></div></div>
+    <div class="ov-total-avail">${TEATRO_CAP - totalIn} disponibles</div>
+  `);
+
+  // KPIs
+  set$('ov-kpis', `
+    <div class="kpi"><div class="kpi-l">2D Entradas</div><div class="kpi-v v2d">${u2}<span style="font-size:14px;font-weight:400;color:var(--t3)">/${c2}</span></div><div class="kpi-sub">${c2-u2} disponibles</div></div>
+    <div class="kpi"><div class="kpi-l">3D Entradas</div><div class="kpi-v v3d">${u3}<span style="font-size:14px;font-weight:400;color:var(--t3)">/${c3}</span></div><div class="kpi-sub">${c3-u3} disponibles</div></div>
+    <div class="kpi"><div class="kpi-l">VIP Presentes</div><div class="kpi-v vpu">${vpin}<span style="font-size:14px;font-weight:400;color:var(--t3)">/${vtot}</span></div><div class="kpi-sub">${vtot-vpin} pendientes</div></div>
+    <div class="kpi"><div class="kpi-l">Total Accesos</div><div class="kpi-v" style="color:var(--t1)">${totalIn}</div><div class="kpi-sub">de ${TEATRO_CAP} butacas</div></div>
+  `);
+
+  // Block overview cards
+  const p2 = c2 ? Math.round(u2/c2*100) : 0;
+  const p3 = c3 ? Math.round(u3/c3*100) : 0;
+  const pv = vtot ? Math.round(vpin/vtot*100) : 0;
+  set$('ov-grid', `
+    <div class="ov-card c2d" onclick="go('2d')">
+      <div class="ov-card-tag">Bloque 2D · Animación</div>
+      <div class="ov-card-n n2d">${u2}<span style="font-size:18px;font-weight:400;color:var(--t3)">/${c2}</span></div>
+      <div class="ov-card-l">entradas registradas · ${c2-u2} disponibles</div>
+      <div class="ov-pbar"><div class="ov-pfill f2d" style="width:${p2}%"></div></div>
+      <div class="ov-cta">Ver bloque <span>→</span></div>
+    </div>
+    <div class="ov-card c3d" onclick="go('3d')">
+      <div class="ov-card-tag">Bloque 3D · Animación</div>
+      <div class="ov-card-n n3d">${u3}<span style="font-size:18px;font-weight:400;color:var(--t3)">/${c3}</span></div>
+      <div class="ov-card-l">entradas registradas · ${c3-u3} disponibles</div>
+      <div class="ov-pbar"><div class="ov-pfill f3d" style="width:${p3}%"></div></div>
+      <div class="ov-cta">Ver bloque <span>→</span></div>
+    </div>
+    <div class="ov-card cvip" onclick="go('vip')">
+      <div class="ov-card-tag">VIP & Industria</div>
+      <div class="ov-card-n npu">${vpin}<span style="font-size:18px;font-weight:400;color:var(--t3)">/${vtot}</span></div>
+      <div class="ov-card-l">presentes · ${vtot-vpin} pendientes</div>
+      <div class="ov-pbar"><div class="ov-pfill fpu" style="width:${pv}%"></div></div>
+      <div class="ov-cta">Ver invitados <span>→</span></div>
+    </div>
+  `);
+}
+
+function rOvLog() {
+  const el = document.getElementById('ov-log'); if(!el) return;
+  const recent = [...LOG].reverse().slice(0,4);
+  if(!recent.length) { el.innerHTML = '<div class="no-data">Sin actividad aún</div>'; return; }
+  el.innerHTML = recent.map(e => `<div class="log-row">
+    <div class="log-t">${e.time||''}</div>
+    <div><div class="log-f">${e.title}</div><div class="log-d">${e.bloque}</div></div>
+    <div class="log-q ${e.qty>0?'p':'n'}">${e.qty>0?'+':''}${e.qty}</div>
+  </div>`).join('');
+}
+
+/* ══ RENDER — VIP ════════════════════════════════════ */
+function rVIP() {
+  let tp=0,tc=0,pin=0,cin=0;
+  VORGS.forEach(o=>o.guests.forEach(g=>{
+    tp++; tc+=g.comp;
+    const s=VS[g.id]||{in:false,comp:[]};
+    if(s.in) pin++;
+    (s.comp||[]).forEach(c=>{if(c&&c.in)cin++;});
+  }));
+  const total = tp+tc, present = pin+cin;
+  set$('hvip-cap', `${present} / ${total}`);
+  set$('vip-kpis', `
+    <div class="kpi"><div class="kpi-l">Invitados</div><div class="kpi-v vpu">${tp}</div></div>
+    <div class="kpi"><div class="kpi-l">Con acomp.</div><div class="kpi-v">${total}</div></div>
+    <div class="kpi"><div class="kpi-l">Presentes</div><div class="kpi-v vok">${present}</div></div>
+    <div class="kpi"><div class="kpi-l">Pendientes</div><div class="kpi-v vwn">${total-present}</div></div>
+  `);
+
+  const q = vipSrch.toLowerCase();
+  const orgs = VORGS.filter(o => {
+    const tm = vipFilt==='all' || o.type===vipFilt;
+    const sm = !q || o.name.toLowerCase().includes(q) || o.guests.some(g=>g.name.toLowerCase().includes(q));
+    return tm && sm;
+  });
+  set$('vip-list', orgs.map(org => {
+    const gs = org.guests.filter(g => !q || g.name.toLowerCase().includes(q) || org.name.toLowerCase().includes(q));
+    const pres = gs.reduce((a,g) => {
+      const s=VS[g.id]||{in:false,comp:[]};
+      return a+(s.in?1:0)+(s.comp||[]).filter(c=>c&&c.in).length;
+    },0);
+    const tot = gs.reduce((a,g) => a+1+g.comp, 0);
+    const rows = gs.map((g, gi) => {
+      const s = VS[g.id] || {in:false,comp:[],time:null};
+      const isLast = gi===gs.length-1 && !g.comp;
+      return `<div class="grow${s.in?' in':''}" style="${isLast?'border-radius:0 0 var(--r-lg) var(--r-lg)':''}">
+        <div class="gavatar${s.in?' in':''}">${ini(g.name)}</div>
+        <div class="ginfo">
+          <div class="gname${s.in?' in':''}">${g.name}${g.comp?` <span style="font-size:10px;color:var(--t3)">+${g.comp}</span>`:''}</div>
+          <div class="${s.in?'gtime':'gmeta'}">${s.in?(s.time||'Ingresó'):'Pendiente de ingreso'}</div>
+        </div>
+        <button class="chk-btn ${s.in?'chk-in':'chk-out'}" onclick="togVip('${g.id}')">${s.in?'✓ Ingresó':'Registrar'}</button>
+      </div>` +
+      Array.from({length:g.comp},(_,ci) => {
+        const cs = (s.comp||[])[ci] || {in:false};
+        const compLast = ci===g.comp-1 && gi===gs.length-1;
+        return `<div class="crow${compLast?' clast':''}">
+          <div class="cdot${cs.in?' in':''}"></div>
+          <div class="cname${cs.in?' in':''}">Acompañante ${ci+1} — ${g.name.split(' ')[0]}</div>
+          <button class="chk-btn ${cs.in?'chk-in':'chk-out'}" style="font-size:9px;padding:4px 9px" onclick="togComp('${g.id}',${ci})">${cs.in?'✓':'Reg.'}</button>
+        </div>`;
+      }).join('');
+    }).join('');
+    return `<div class="org-block">
+      <div class="org-hdr">
+        <div class="org-name">${org.name}</div>
+        <div class="org-meta">
+          <span class="org-stat">${pres}/${tot}</span>
+          <span class="type-pill ${TCSS[org.type]}">${TLAB[org.type]}</span>
+        </div>
+      </div>
+      ${rows}
+    </div>`;
+  }).join(''));
+}
+
+/* ══ RENDER — LOG ════════════════════════════════════ */
+function rLog() {
+  const el = document.getElementById('log-body'); if(!el) return;
+  if(!LOG.length) { el.innerHTML = '<div class="no-data">Sin entradas registradas aún</div>'; return; }
+  el.innerHTML = [...LOG].reverse().map(e => `<div class="log-row">
+    <div class="log-t">${e.time||''}</div>
+    <div><div class="log-f">${e.title}</div><div class="log-d">${e.bloque}</div></div>
+    <div class="log-q ${e.qty>0?'p':'n'}">${e.qty>0?'+':''}${e.qty}</div>
+  </div>`).join('');
+}
+
+/* ══ RENDER ALL ══════════════════════════════════════ */
+function rAll() {
+  rOv(); rGrid('2d'); rGrid('3d');
+  rBlkHeader('2d'); rBlkHeader('3d');
+  rSelects(); rVIP(); rLog();
+  if(modalFilmId) { updModalCap(); renderModalAlumnos(modalAluFilter); }
+}
+
+/* ══ NAV ═════════════════════════════════════════════ */
+function go(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  document.getElementById('v-' + id).classList.add('on');
+  document.querySelectorAll('.tnav').forEach(t => t.classList.remove('on'));
+  const tnMap = {ov:'tn-ov','2d':'tn-2d','3d':'tn-3d',vip:'tn-vip',log:'tn-log'};
+  const tn = document.getElementById(tnMap[id]);
+  if(tn) tn.classList.add('on');
+}
+
+function vipF(f, btn) {
+  vipFilt = f;
+  document.querySelectorAll('#v-vip .fpill').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on'); rVIP();
+}
+function vipQ(v) { vipSrch = v; rVIP(); }
+function fq(blk, v) { srch[blk] = v; rGrid(blk); }
+
+/* ══ TOAST ═══════════════════════════════════════════ */
+let _tt;
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'on' + (type?' '+type:'');
+  clearTimeout(_tt); _tt = setTimeout(() => el.className = '', 2600);
+}
+
+
+/* ══ FILM DETAIL MODAL ═══════════════════════════════ */
+let modalFilmId = '';
+let modalQty = 1;
+let modalAluFilter = '';
+
+function openModal(id) {
+  const f = FILMS.find(x => x.id === id); if(!f) return;
+  modalFilmId = id; modalQty = 1; modalAluFilter = '';
+  document.getElementById('m-qty').textContent = 1;
+  document.getElementById('m-srch').value = '';
+  const is2d = f.b === '2D';
+  const tag = document.getElementById('m-blq-tag');
+  tag.textContent = 'Bloque ' + f.b + ' · Animación';
+  tag.className = 'modal-blq-tag ' + (is2d ? 'blk-tag-2d' : 'blk-tag-3d');
+  document.getElementById('m-title').textContent = f.t;
+  document.getElementById('m-meta').textContent = f.a.length + ' alumno' + (f.a.length!==1?'s':'') + ' · ' + f.inv + ' invitados registrados';
+  updModalCap();
+  renderModalAlumnos('');
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  if(e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  modalFilmId = '';
+}
+
+function updModalCap() {
+  if(!modalFilmId) return;
+  const f = FILMS.find(x => x.id === modalFilmId); if(!f) return;
+  const used = fused(f.id), cap = fcap(f), avail = favail(f), pct = fpct(f), s = fst(f);
+  const ac = s==='ok'?'var(--ok)':s==='wn'?'var(--wn)':'var(--er)';
+  document.getElementById('m-cap-strip').innerHTML = `
+    <div class="mcs-item">
+      <div class="mcs-n">${used}</div>
+      <div class="mcs-l">Entradas</div>
+    </div>
+    <div class="mcs-sep"></div>
+    <div class="mcs-bar-wrap">
+      <div class="mcs-bar"><div class="mcs-bar-fill" style="width:${pct}%;background:${ac}"></div></div>
+      <div class="mcs-bar-labels"><span>${pct}% ocupado</span><span>${cap} capacidad</span></div>
+    </div>
+    <div class="mcs-sep"></div>
+    <div class="mcs-item">
+      <div class="mcs-n ${s==='ok'?'ok':s==='wn'?'wn':'er'}">${avail}</div>
+      <div class="mcs-l">Disponible</div>
+    </div>
+  `;
+  const btn = document.getElementById('m-reg-btn');
+  if(!cap || avail === 0) {
+    btn.disabled = true; btn.className = 'modal-reg-btn er';
+    btn.textContent = !cap ? 'Sin asistentes' : 'Bloqueado — Aforo completo';
+  } else {
+    btn.disabled = false; btn.className = 'modal-reg-btn';
+    btn.textContent = `Registrar ${modalQty} persona${modalQty>1?'s':''}`;
+  }
+}
+
+function renderModalAlumnos(q) {
+  const f = FILMS.find(x => x.id === modalFilmId); if(!f) return;
+  const filtered = f.a.filter(n => !q || n.toLowerCase().includes(q.toLowerCase()));
+  document.getElementById('m-alu-count').textContent = filtered.length + ' / ' + f.a.length;
+  if(!f.a.length) {
+    document.getElementById('m-alumnos-list').innerHTML = '<div class="no-alumnos">Sin alumnos registrados en este corto</div>';
+    return;
+  }
+  document.getElementById('m-alumnos-list').innerHTML = filtered.map((name, i) => {
+    const initials = name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+    const absIdx = f.a.indexOf(name) + 1;
+    return `<div class="alumno-row">
+      <div class="alumno-avatar">${initials}</div>
+      <div class="alumno-name">${name}</div>
+      <div class="alumno-num">#${absIdx}</div>
+    </div>`;
+  }).join('');
+}
+
+function filterAlumnos(q) {
+  modalAluFilter = q; renderModalAlumnos(q);
+}
+
+function cqModal(d) {
+  const f = modalFilmId ? FILMS.find(x=>x.id===modalFilmId) : null;
+  const mx = f ? favail(f) : 20;
+  modalQty = Math.max(1, Math.min(20, Math.min(mx, modalQty + d)));
+  document.getElementById('m-qty').textContent = modalQty;
+  const btn = document.getElementById('m-reg-btn');
+  if(!btn.disabled) btn.textContent = `Registrar ${modalQty} persona${modalQty>1?'s':''}`;
+}
+
+function doRegModal() {
+  if(!modalFilmId) return;
+  regFilm(modalFilmId, modalQty);
+  modalQty = 1; document.getElementById('m-qty').textContent = 1;
+  updModalCap();
+}
+
+/* Patch filmCard to open modal on card click, not button area */
+const _origFilmCard = filmCard;
+filmCard = function(f) {
+  let html = _origFilmCard(f);
+  return html.replace('<div class="fcard', `<div class="fcard" onclick="if(!event.target.closest('.card-btns'))openModal('${f.id}')" `);
+};
+
+/* ══ BOOT ════════════════════════════════════════════ */
+init();
+</script>
+</body>
+</html>
