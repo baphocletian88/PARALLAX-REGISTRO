@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qr-creator@1.0.0/dist/qr-creator.min.js"></script>
 <style>
 /* ═══════════════════════════════════════
    DESIGN TOKENS — matched to Parallax web
@@ -658,15 +659,53 @@ html, body {
 .card-btns, .card-btns * { pointer-events: all; }
 
 </style>
+<style>
+/* QR Generator — scoped overrides */
+#v-qrgen .page{max-width:100%;padding:0}
+#v-qrgen .hdr{display:none}
+#v-qrgen .page-title{font-size:18px;font-weight:700;letter-spacing:-.5px;color:var(--t1);margin-bottom:6px}
+#v-qrgen .page-sub{font-size:13px;color:var(--t3);margin-bottom:20px;line-height:1.6}
+#v-qrgen .url-config{background:var(--bg2);border:0.5px solid var(--b1);border-radius:var(--r-lg);padding:16px;margin-bottom:20px}
+#v-qrgen .url-label{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:8px}
+#v-qrgen .url-input{width:100%;font-family:var(--ff);font-size:12px;padding:10px 12px;background:var(--bg3);border:0.5px solid var(--b1);color:var(--t1);border-radius:var(--r-sm);outline:none;transition:border-color .15s}
+#v-qrgen .url-input:focus{border-color:rgba(255,255,255,.2)}
+#v-qrgen .url-hint{font-size:11px;color:var(--t3);margin-top:6px}
+#v-qrgen .section-label{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-full);margin-bottom:14px;display:inline-flex}
+#v-qrgen .sl-2d{background:rgba(99,102,241,.12);color:#818CF8;border:0.5px solid rgba(99,102,241,.3)}
+#v-qrgen .sl-3d{background:rgba(16,185,129,.12);color:#34D399;border:0.5px solid rgba(16,185,129,.3)}
+#v-qrgen .sl-vip{background:var(--pub);color:var(--pu3);border:0.5px solid var(--pur)}
+#v-qrgen .qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:8px;margin-bottom:24px}
+#v-qrgen .qr-card{background:var(--bg2);border:0.5px solid var(--b1);border-radius:var(--r-lg);overflow:hidden}
+#v-qrgen .qr-body{padding:12px;display:flex;flex-direction:column;align-items:center}
+#v-qrgen .qr-stripe{height:2px}
+#v-qrgen .qs-2d{background:var(--a2d)}
+#v-qrgen .qs-3d{background:var(--a3d)}
+#v-qrgen .qs-vip{background:var(--pu)}
+#v-qrgen .qr-tag{font-size:8px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;padding:2px 7px;border-radius:var(--r-full);margin-bottom:8px;align-self:flex-start}
+#v-qrgen .qt-2d{background:rgba(99,102,241,.12);color:#818CF8;border:0.5px solid rgba(99,102,241,.25)}
+#v-qrgen .qt-3d{background:rgba(16,185,129,.12);color:#34D399;border:0.5px solid rgba(16,185,129,.25)}
+#v-qrgen .qt-vip{background:var(--pub);color:var(--pu3);border:0.5px solid var(--pur)}
+#v-qrgen .qr-title{font-size:12px;font-weight:600;color:var(--t1);margin-bottom:2px;align-self:flex-start;line-height:1.3}
+#v-qrgen .qr-sub{font-size:10px;color:var(--t3);margin-bottom:4px;align-self:flex-start}
+#v-qrgen .qr-canvas-wrap{background:#fff;border-radius:8px;padding:10px;margin:8px 0;width:136px;height:136px;display:flex;align-items:center;justify-content:center}
+#v-qrgen .qr-canvas-wrap canvas{width:116px!important;height:116px!important}
+#v-qrgen .qr-url{font-size:9px;color:var(--t3);word-break:break-all;text-align:center;margin-bottom:8px;line-height:1.4;max-width:155px}
+#v-qrgen .qr-btns{display:flex;gap:5px;width:100%}
+#v-qrgen .dl-btn{flex:1;font-family:var(--ff);font-size:9px;font-weight:600;padding:7px 4px;border-radius:6px;cursor:pointer;background:var(--pub);border:0.5px solid var(--pur);color:var(--pu3);transition:background .15s;text-align:center}
+#v-qrgen .dl-btn:hover{background:rgba(124,58,237,.25)}
+#v-qrgen .cp-btn{font-family:var(--ff);font-size:9px;font-weight:600;padding:7px 8px;border-radius:6px;background:rgba(255,255,255,.04);border:0.5px solid var(--b1);color:var(--t2);cursor:pointer;transition:all .15s}
+#v-qrgen .cp-btn.copied{color:var(--ok);border-color:var(--okr)}
+#v-qrgen .instructions{background:var(--bg2);border:0.5px solid var(--b1);border-radius:var(--r-lg);padding:18px;margin-top:8px}
+#v-qrgen .inst-title{font-size:14px;font-weight:600;color:var(--t1);margin-bottom:14px}
+#v-qrgen .inst-step{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start}
+#v-qrgen .inst-n{width:22px;height:22px;border-radius:50%;flex-shrink:0;background:var(--pub);border:0.5px solid var(--pur);color:var(--pu3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+#v-qrgen .inst-txt{font-size:12px;color:var(--t2);line-height:1.5}
+/* QR tab gold accent */
+.tnav#tn-qrgen.on{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.3);color:var(--gold)}
+</style>
 </head>
 <body>
-
-<!-- LOADER -->
-<div id="loader">
-  <div class="ld-icon"><div class="ld-ring"></div></div>
-  <div class="ld-name">Parallax 2026</div>
-</div>
-
+<div id="loader"><div class="ld-icon"><div class="ld-ring"></div></div><div class="ld-name">Parallax 2026</div></div>
 <div class="shell" id="shell" style="display:none">
 
   <!-- TOPBAR -->
@@ -685,11 +724,12 @@ html, body {
 
   <!-- TAB NAV — pill style -->
   <div class="tabnav">
-    <button class="tnav on"    onclick="go('ov')"  id="tn-ov">Overview</button>
-    <button class="tnav t2d"   onclick="go('2d')"  id="tn-2d"><span class="tndot" style="background:#818CF8"></span>Bloque 2D</button>
-    <button class="tnav t3d"   onclick="go('3d')"  id="tn-3d"><span class="tndot" style="background:#34D399"></span>Bloque 3D</button>
-    <button class="tnav"       onclick="go('vip')" id="tn-vip"><span class="tndot" style="background:var(--pu3)"></span>VIP</button>
-    <button class="tnav"       onclick="go('log')" id="tn-log">Registro</button>
+    <button class="tnav on"  onclick="go('ov')"    id="tn-ov">Overview</button>
+    <button class="tnav t2d" onclick="go('2d')"    id="tn-2d"><span class="tndot" style="background:#818CF8"></span>2D</button>
+    <button class="tnav t3d" onclick="go('3d')"    id="tn-3d"><span class="tndot" style="background:#34D399"></span>3D</button>
+    <button class="tnav"     onclick="go('vip')"   id="tn-vip"><span class="tndot" style="background:var(--pu3)"></span>VIP</button>
+    <button class="tnav"     onclick="go('log')"   id="tn-log">Registro</button>
+    <button class="tnav"     onclick="go('qrgen')" id="tn-qrgen">⬡ QRs</button>
   </div>
 
   <!-- VIEWS -->
@@ -861,6 +901,70 @@ html, body {
       </div>
     </div>
 
+
+    <!-- ▸ QR GENERATOR -->
+    <div class="view" id="v-qrgen">
+      <div class="vbody">
+<div class="page">
+
+  <div class="hdr"><div class="hdr-dot"></div><div class="hdr-name">Parallax 2026</div></div>
+  <div class="page-title">Generador de QRs de Acceso</div>
+  <div class="page-sub">
+    Configura la URL base de tu página de check-in, genera todos los QRs y descárgalos para enviarlos a tus invitados.
+  </div>
+
+  <!-- URL CONFIG -->
+  <div class="url-config">
+    <div class="url-label">URL base de la página de check-in</div>
+    <input class="url-input" id="base-url" type="text"
+      value="https://baphocletian88.github.io/PARALLAX-REGISTRO/parallax_checkin_qr.html"
+      placeholder="https://baphocletian88.github.io/PARALLAX-REGISTRO/parallax_checkin_qr.html"
+      oninput="regenAll()">
+    <div class="url-hint">
+      Esta es la URL donde subiste el archivo <strong>parallax_checkin_qr.html</strong>.
+      Puedes subirlo gratis a GitHub Pages, Netlify o Vercel. El sistema agregará los parámetros automáticamente.
+    </div>
+  </div>
+
+  <!-- 2D FILMS -->
+  <div class="section-label sl-2d">Bloque 2D · 8 cortos</div>
+  <div class="qr-grid" id="grid-2d"></div>
+
+  <!-- 3D FILMS -->
+  <div class="section-label sl-3d">Bloque 3D · 8 cortos</div>
+  <div class="qr-grid" id="grid-3d"></div>
+
+  <!-- VIP -->
+  <div class="section-label sl-vip">Invitados Especiales VIP · 49 invitados</div>
+  <div class="qr-grid" id="grid-vip"></div>
+
+  <!-- INSTRUCTIONS -->
+  <div class="instructions">
+    <div class="inst-title">Cómo usar estos QRs</div>
+    <div class="inst-step">
+      <div class="inst-n">1</div>
+      <div class="inst-txt"><strong>Sube parallax_checkin_qr.html</strong> a un servidor web (GitHub Pages es gratis y tarda 2 minutos). Copia la URL y pégala arriba.</div>
+    </div>
+    <div class="inst-step">
+      <div class="inst-n">2</div>
+      <div class="inst-txt"><strong>QRs de cortos (Bloque 2D y 3D):</strong> Descarga el QR de cada cortometraje y compártelo por WhatsApp con los alumnos de ese corto. Ellos lo reenvían a sus invitados.</div>
+    </div>
+    <div class="inst-step">
+      <div class="inst-n">3</div>
+      <div class="inst-txt"><strong>QRs VIP:</strong> Cada invitado especial recibe su QR personal. Al escanearlo, su nombre ya aparece pre-cargado — solo confirma y queda registrado automáticamente.</div>
+    </div>
+    <div class="inst-step">
+      <div class="inst-n">4</div>
+      <div class="inst-txt"><strong>El conteo se actualiza en tiempo real</strong> en tu sistema de acceso (parallax2026_acceso_v4.html) en todos los dispositivos del staff.</div>
+    </div>
+    <div class="inst-step">
+      <div class="inst-n">5</div>
+      <div class="inst-txt">Para el aforo en puerta, el staff puede ver en la plataforma qué invitados registraron nombre y correo, y quién sigue pendiente.</div>
+    </div>
+  </div>
+</div>
+      </div>
+    </div>
   </div><!-- /views -->
 
   <!-- FILM DETAIL MODAL -->
@@ -899,20 +1003,20 @@ html, body {
     </div>
   </div>
 </div><!-- /shell -->
-
 <div id="toast"></div>
-
 <script>
+
 /* ══ FIREBASE CONFIG ══════════════════════════════════
    Reemplaza con tus credenciales reales
 ══════════════════════════════════════════════════════ */
 const FB_CFG = {
-  apiKey: "AIzaSyCKIS0ou9NORRE-MaswP40X9grG8ES_0Ls",
-  authDomain: "parallax2026-4938d.firebaseapp.com",
-  projectId: "parallax2026-4938d",
-  storageBucket: "parallax2026-4938d.firebasestorage.app",
-  messagingSenderId: "429549056894",
-  appId: "1:429549056894:web:971b2421a484922178b92f"
+  apiKey:            "AIzaSyDemo_ReplaceWithYourKey",
+  authDomain:        "parallax2026.firebaseapp.com",
+  databaseURL:       "https://parallax2026-default-rtdb.firebaseio.com",
+  projectId:         "parallax2026",
+  storageBucket:     "parallax2026.appspot.com",
+  messagingSenderId: "000000000000",
+  appId:             "1:000000000000:web:abc123"
 };
 
 /* ══ CONSTANTS ════════════════════════════════════════ */
@@ -1363,7 +1467,7 @@ function go(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
   document.getElementById('v-' + id).classList.add('on');
   document.querySelectorAll('.tnav').forEach(t => t.classList.remove('on'));
-  const tnMap = {ov:'tn-ov','2d':'tn-2d','3d':'tn-3d',vip:'tn-vip',log:'tn-log'};
+  const tnMap = {ov:'tn-ov','2d':'tn-2d','3d':'tn-3d',vip:'tn-vip',log:'tn-log',qrgen:'tn-qrgen'};
   const tn = document.getElementById(tnMap[id]);
   if(tn) tn.classList.add('on');
 }
@@ -1493,6 +1597,287 @@ filmCard = function(f) {
 
 /* ══ BOOT ════════════════════════════════════════════ */
 init();
+
+/* Activate QR gen on first open */
+const _baseGo = go;
+go = function(id) {
+  _baseGo(id);
+  if(id === 'qrgen' && !window._qrReady) {
+    window._qrReady = true;
+    setTimeout(() => { if(typeof qrTryInit==='function') qrTryInit(); }, 150);
+  }
+};
+
+/* ══ QR GENERATOR MODULE (namespaced) ═══════════════════ */
+(function() {
+
+const QR_FILMS = [
+  {id:'afterlight', b:'2D', t:'Afterlight', inv:58},
+  {id:'battle',     b:'2D', t:'Battle of the Batter', inv:35},
+  {id:'beatbox',    b:'2D', t:'Beatbox', inv:30},
+  {id:'flama',      b:'2D', t:'Flama', inv:31},
+  {id:'freshtzu',   b:'2D', t:'Freshtzu', inv:21},
+  {id:'malita',     b:'2D', t:"Malita Pa' Ti", inv:32},
+  {id:'otterside',  b:'2D', t:'Otterside', inv:37},
+  {id:'ronnie',     b:'2D', t:'Ronnie en la Luna', inv:29},
+  {id:'blockhead',  b:'3D', t:'Blockhead', inv:5},
+  {id:'contact',    b:'3D', t:'Contact', inv:5},
+  {id:'escamas',    b:'3D', t:'Escamas', inv:50},
+  {id:'ineedspace', b:'3D', t:'I Need Some Space', inv:18},
+  {id:'lonestar',   b:'3D', t:'Lone Star Store', inv:13},
+  {id:'recuerda',   b:'3D', t:'Recuerda que te amo', inv:31},
+  {id:'rex',        b:'3D', t:'Rex', inv:14},
+  {id:'ungiro',     b:'3D', t:'Un giro en el agua', inv:0},
+];
+
+const VIP = [
+  {id:'sl1',name:'Eduardo Morales',org:'Fest. Sta. Lucía'},
+  {id:'sl2',name:'Catalina Alvarez',org:'Fest. Sta. Lucía'},
+  {id:'sl3',name:'Erika López',org:'Fest. Sta. Lucía'},
+  {id:'sl4',name:'Araceli Mendivil',org:'Fest. Sta. Lucía'},
+  {id:'sl5',name:'Mauricio Alvarez Sanchez',org:'Fest. Sta. Lucía'},
+  {id:'sl6',name:'Miguel Ángel Aguilera',org:'Fest. Sta. Lucía'},
+  {id:'sl7',name:'Caterina Aquino',org:'Fest. Sta. Lucía'},
+  {id:'hb1',name:'Fedro Ceballos',org:'Hey Banco'},
+  {id:'kw1',name:'Alejandra Meza',org:'Keywords Studio'},
+  {id:'pp1',name:'Angel Hernandez',org:'Pixel Perfect'},
+  {id:'mm1',name:'David Davila',org:'MIMEC'},
+  {id:'mm2',name:'Mariana Ortiz',org:'MIMEC'},
+  {id:'ar1',name:'Rubi Armass',org:'Armass Productions'},
+  {id:'in1',name:'Leo Marz',org:'Independiente'},
+  {id:'in2',name:'Angel Corona',org:'Independiente'},
+  {id:'en1',name:'Elena Gaytan',org:'El Norte'},
+  {id:'vm1',name:'Fernanda Garcia',org:'Vital Moves'},
+  {id:'vm2',name:'Cecillia Cardoso',org:'Vital Moves'},
+  {id:'ud1',name:'Carlos Basurto',org:'UDEM'},
+  {id:'ud2',name:'Jessica Ochoa',org:'UDEM'},
+  {id:'ud3',name:'Lesly Olan',org:'UDEM'},
+  {id:'ud4',name:'Eduardo Guizar',org:'UDEM'},
+  {id:'ud5',name:'Diana Chapa',org:'UDEM'},
+  {id:'ud6',name:'Monica Chapa',org:'UDEM'},
+  {id:'ud7',name:'Daniela Estrada',org:'UDEM'},
+  {id:'ud8',name:'Maria Eugenia Santos',org:'UDEM'},
+  {id:'ud9',name:'Cristobal Guerra',org:'UDEM'},
+  {id:'ud10',name:'Amparo Vazquez',org:'UDEM'},
+  {id:'ud11',name:'Rosa Quiroz',org:'UDEM'},
+  {id:'ud12',name:'Patricia Beltran',org:'UDEM'},
+  {id:'ud13',name:'Guillermo Lavin',org:'UDEM'},
+  {id:'ud14',name:'Francisco González',org:'UDEM'},
+  {id:'ud15',name:'Martin Garcia',org:'UDEM'},
+  {id:'ud16',name:'Angel Martinez',org:'UDEM'},
+  {id:'ud17',name:'Abraham Lozano',org:'UDEM'},
+  {id:'ud18',name:'Mariana Baidon',org:'UDEM'},
+  {id:'ud19',name:'Osmar Garduño',org:'UDEM'},
+  {id:'ud20',name:'Abril Garza',org:'UDEM'},
+  {id:'ud21',name:'Maria Fernanda Esquivel',org:'UDEM'},
+  {id:'ud22',name:'Jair Salazar',org:'UDEM'},
+  {id:'ud11c1',name:'Acompañante 1 · Rosa Quiroz',org:'UDEM'},
+  {id:'ud11c2',name:'Acompañante 2 · Rosa Quiroz',org:'UDEM'},
+  {id:'ud11c3',name:'Acompañante 3 · Rosa Quiroz',org:'UDEM'},
+  {id:'ud14c1',name:'Acompañante 1 · Francisco González',org:'UDEM'},
+  {id:'ud15c1',name:'Acompañante 1 · Martin Garcia',org:'UDEM'},
+  {id:'ud15c2',name:'Acompañante 2 · Martin Garcia',org:'UDEM'},
+  {id:'in1c1', name:'Acompañante 1 · Leo Marz',org:'Independiente'},
+  {id:'in1c2', name:'Acompañante 2 · Leo Marz',org:'Independiente'},
+  {id:'kw1c1', name:'Acompañante 1 · Alejandra Meza',org:'Keywords Studio'},
+];
+
+function qrBaseUrl() {
+  return document.getElementById('base-url').value.trim().replace(/\/$/, '');
+}
+
+function qrFilmUrl(f) {
+  return `${baseUrl()}?m=film&t=${f.id}`;
+}
+
+function qrVipUrl(g) {
+  return `${baseUrl()}?m=vip&t=${g.id}`;
+}
+
+function qrMakeCard(title, sub, url, stripeClass, tagClass, tagText, dlName) {
+  const div = document.createElement('div');
+  div.className = 'qr-card';
+  div.innerHTML = `
+    <div class="qr-stripe ${stripeClass}"></div>
+    <div class="qr-body">
+      <div class="qr-tag ${tagClass}">${tagText}</div>
+      <div class="qr-title">${title}</div>
+      <div class="qr-sub">${sub}</div>
+      <div class="qr-canvas-wrap"><canvas id="qr-${dlName}"></canvas></div>
+      <div class="qr-url" id="url-${dlName}">${url}</div>
+      <div class="qr-btns">
+        <button class="dl-btn" onclick="qrDownload('${dlName}','${title.replace(/'/g,"\\'")}')">Descargar PNG</button>
+        <button class="cp-btn" id="cp-${dlName}" onclick="qrCopyUrl('${dlName}')">Copiar</button>
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+function qrGenerate(canvasId, url) {
+  const el = document.getElementById(canvasId);
+  if(!el) return;
+  try {
+    window.QrCreator.render({
+      text: url,
+      radius: 0,
+      ecLevel: 'M',
+      fill: '#000000',
+      background: '#FFFFFF',
+      size: 136
+    }, el);
+  } catch(e) {
+    // fallback: draw placeholder
+    const ctx = el.getContext('2d');
+    if(ctx) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0,0,136,136);
+      ctx.fillStyle = '#999';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('QR no disponible', 68, 70);
+      ctx.fillText('Ver URL abajo', 68, 84);
+    }
+    console.error('QR error:', e);
+  }
+}
+
+function qrRegenAll() {
+  const g2 = document.getElementById('grid-2d');
+  const g3 = document.getElementById('grid-3d');
+  const gv = document.getElementById('grid-vip');
+  g2.innerHTML = ''; g3.innerHTML = ''; gv.innerHTML = '';
+
+  // Build all cards first, then render QRs with stagger
+  const queue = [];
+
+  QR_FILMS.forEach(f => {
+    const url = qrFilmUrl(f);
+    const dlName = f.id;
+    const is2d = f.b === '2D';
+    const card = qrMakeCard(f.t, `${f.inv} invitados · Bloque ${f.b}`, url,
+      is2d ? 'qs-2d' : 'qs-3d', is2d ? 'qt-2d' : 'qt-3d',
+      'Bloque ' + f.b, dlName);
+    (is2d ? g2 : g3).appendChild(card);
+    queue.push({id: 'qr-' + dlName, url});
+  });
+
+  VIP.forEach(g => {
+    const url = qrVipUrl(g);
+    const dlName = 'vip_' + g.id;
+    const card = qrMakeCard(g.name, g.org, url, 'qs-vip', 'qt-vip', 'VIP', dlName);
+    gv.appendChild(card);
+    queue.push({id: 'qr-' + dlName, url});
+  });
+
+  // Render QRs in batches to avoid blocking the UI
+  const BATCH = 5, DELAY = 80;
+  queue.forEach(({id, url}, i) => {
+    setTimeout(() => qrGenerate(id, url), Math.floor(i/BATCH) * DELAY + 50);
+  });
+}
+
+
+function qrDownload(id, title) {
+  const src = document.getElementById('qr-' + id);
+  if(!src) return;
+  // Create output canvas with label
+  const out = document.createElement('canvas');
+  out.width = 360; out.height = 440;
+  const ctx = out.getContext('2d');
+  // White background
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, 360, 440);
+  // Draw QR centered
+  try { ctx.drawImage(src, 112, 24, 136, 136); } catch(e) {}
+  // Festival name
+  ctx.fillStyle = '#000000';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('PARALLAX 2026', 180, 185);
+  // Title (word-wrap)
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillStyle = '#333333';
+  const words = title.split(' '), maxW = 300;
+  let line = '', y = 205;
+  words.forEach((w, i) => {
+    const test = line + w + ' ';
+    if(ctx.measureText(test).width > maxW && i > 0) {
+      ctx.fillText(line.trim(), 180, y); line = w + ' '; y += 17;
+    } else { line = test; }
+  });
+  ctx.fillText(line.trim(), 180, y);
+  // Date
+  ctx.font = '10px Inter, sans-serif';
+  ctx.fillStyle = '#888888';
+  ctx.fillText('22 mayo 2026 · Teatro UDEM', 180, y + 18);
+  // Download
+  const a = document.createElement('a');
+  a.download = 'QR_' + id + '.png';
+  a.href = out.toDataURL('image/png');
+  a.click();
+}
+
+function qrCopyUrl(id, btnId) {
+  const text = document.getElementById('url-' + id);
+  if(!text) return;
+  navigator.clipboard.writeText(text.textContent.trim()).then(() => {
+    const btn = document.getElementById('cp-' + id);
+    if(!btn) return;
+    btn.textContent = '✓'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+/* ══ FIREBASE — persist QR registry (optional, works without it) ══ */
+const QR_FB_CFG = {
+  apiKey:"AIzaSyDemo_ReplaceWithYourKey",
+  authDomain:"parallax2026.firebaseapp.com",
+  databaseURL:"https://parallax2026-default-rtdb.firebaseio.com",
+  projectId:"parallax2026",
+  storageBucket:"parallax2026.appspot.com",
+  messagingSenderId:"000000000000",
+  appId:"1:000000000000:web:abc123"
+};
+
+function qrSaveRegistry() {
+  try {
+    if(typeof firebase === 'undefined') return;
+    const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(QR_FB_CFG);
+    const db = app.database();
+    const base = qrBaseUrl();
+    const registry = {};
+    QR_FILMS.forEach(f => {
+      registry['film_' + f.id] = {
+        type: 'film', filmId: f.id, title: f.t, bloque: f.b,
+        url: base + '?m=film&t=' + f.id,
+        inv: f.inv, generatedAt: new Date().toISOString()
+      };
+    });
+    VIP.forEach(g => {
+      registry['vip_' + g.id] = {
+        type: 'vip', guestId: g.id, name: g.name, org: g.org,
+        url: base + '?m=vip&t=' + g.id,
+        generatedAt: new Date().toISOString()
+      };
+    });
+    db.ref('qr_registry').set(registry)
+      .then(() => console.log('QR registry saved to Firebase'))
+      .catch(e => console.warn('QR registry save failed (non-critical):', e));
+  } catch(e) { /* non-critical */ }
+}
+
+// Initial render - wait for lib
+function qrTryInit() {
+  if(typeof window.QrCreator !== 'undefined') {
+    setTimeout(() => { qrRegenAll(); qrSaveRegistry(); }, 100);
+  } else {
+    setTimeout(tryInit, 150);
+  }
+}
+qrTryInit();
+
+})();
 </script>
 </body>
 </html>
