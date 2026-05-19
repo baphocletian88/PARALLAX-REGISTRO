@@ -540,59 +540,82 @@ async function doConfirm() {
   if(!email || !email.includes('@')) { shake('inp-email'); return; }
 
   const btn = document.getElementById('confirm-btn');
-  btn.disabled = true; btn.textContent = 'Registrando…';
-
-  const timestamp = new Date().toISOString();
-  const entry = { name, email, timestamp, target: TARGET, mode: MODE };
+  btn.disabled = true; btn.textContent = 'Verificando…';
 
   try {
     if(MODE === 'vip') {
+      // ── VIP: check for existing registration by guestId (unique key)
+      const regKey = 'vip_checkins/' + TARGET;
       if(db) {
-        await db.ref('vip_checkins/' + TARGET).set({
-          ...entry, checkedIn: true,
-          guestName: vipData.name, org: vipData.org
+        const snap = await db.ref(regKey).once('value');
+        if(snap.val() && snap.val().checkedIn) {
+          showDup(snap.val().name || name); return;
+        }
+        btn.textContent = 'Registrando…';
+        const timestamp = new Date().toISOString();
+        const timeStr = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+        // Write VIP checkin — one record per guestId, no duplicates possible
+        await db.ref(regKey).set({
+          checkedIn: true, name: vipData.name, email,
+          org: vipData.org, timestamp, timeStr, target: TARGET
         });
-        // Mark VIP as checked in main VIP state
+        // Update main VIP state for the dashboard
         const curVip = (await db.ref('vip/' + TARGET).once('value')).val() || {};
-        await db.ref('vip/' + TARGET).set({
-          ...curVip, in: true, time: new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})
-        });
+        await db.ref('vip/' + TARGET).set({...curVip, in: true, time: timeStr});
       }
       showSuccess(vipData.name, 'Invitado Especial · Parallax 2026', null);
 
     } else {
-      // Film check-in
+      // ── FILM: check capacity, then register with email as dedup key
       const avail = Math.max(0, currentCap - currentUsed);
-      if(avail <= 0) { btn.disabled = true; btn.className = 'confirm-btn full'; btn.textContent = 'Aforo completo'; return; }
+      if(avail <= 0) {
+        btn.disabled = true; btn.className = 'confirm-btn full';
+        btn.textContent = 'Aforo completo'; return;
+      }
+      btn.textContent = 'Registrando…';
+      const timestamp = new Date().toISOString();
+      const timeStr = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 
       if(db) {
-        // Save attendee record
-        await db.ref('attendees/' + TARGET).push(entry);
-        // Increment count
+        // Use email hash as dedup key so same person can't register twice
+        const emailKey = email.toLowerCase().replace(/[^a-z0-9]/g,'_');
+        const dedupRef = db.ref('attendees_dedup/' + TARGET + '/' + emailKey);
+        const dedupSnap = await dedupRef.once('value');
+        if(dedupSnap.val()) {
+          // Already registered — show success with their previous name
+          showSuccess(dedupSnap.val().name || name, filmData.t, Math.max(0, currentCap - currentUsed));
+          return;
+        }
+        // Use a transaction to safely increment the counter
+        let finalUsed = currentUsed;
         await db.ref('screenings/' + TARGET).transaction(cur => {
           const d = cur || {used:0};
+          if(d.used >= currentCap) return; // abort if full
           d.used = (d.used||0) + 1;
+          finalUsed = d.used;
           return d;
         });
-        // Push to event log
-        await db.ref('eventlog').push({
-          time: new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
-          title: filmData.t, bloque: filmData.b, qty: 1,
-          name, email
-        });
+        // Save attendee record + dedup marker
+        const entry = {name, email, timestamp, timeStr, target: TARGET, bloque: filmData.b, filmTitle: filmData.t};
+        await Promise.all([
+          db.ref('attendees/' + TARGET).push(entry),
+          dedupRef.set(entry),
+          db.ref('eventlog').push({time: timeStr, title: filmData.t, bloque: filmData.b, qty: 1, name, email})
+        ]);
+        showSuccess(name, filmData.t, Math.max(0, currentCap - finalUsed));
       } else {
-        currentUsed++; updateCapUI();
+        // Demo mode
+        currentUsed++;
+        showSuccess(name, filmData.t, Math.max(0, currentCap - currentUsed));
       }
-
-      const newAvail = Math.max(0, currentCap - currentUsed - 1);
-      showSuccess(name, filmData.t, newAvail);
     }
   } catch(e) {
+    console.error('Registration error:', e);
     btn.disabled = false; btn.textContent = 'Confirmar mi asistencia';
-    console.error(e);
     alert('Error al registrar. Verifica tu conexión e intenta de nuevo.');
   }
 }
+
 
 /* ══ UI HELPERS ══ */
 function setState(id) {
