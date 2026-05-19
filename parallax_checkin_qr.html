@@ -9,663 +9,479 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
-:root {
-  --bg: #000; --bg1: #0A0A0A; --bg2: #111; --bg3: #161616;
-  --t1: #FFF; --t2: #A0A0A0; --t3: #555;
-  --b1: rgba(255,255,255,0.10); --b2: rgba(255,255,255,0.06);
-  --pu: #7C3AED; --pu2: #9333EA; --pu3: #A855F7;
-  --pub: rgba(124,58,237,0.15); --pur: rgba(124,58,237,0.30);
-  --ok: #22C55E; --okb: rgba(34,197,94,0.12); --okr: rgba(34,197,94,0.28);
-  --er: #EF4444; --erb: rgba(239,68,68,0.12); --err: rgba(239,68,68,0.28);
-  --wn: #F59E0B;
-  --a2d: #6366F1; --a3d: #10B981;
-  --ff: 'Inter', -apple-system, sans-serif;
-  --r: 14px; --rfull: 9999px;
+:root{
+  --bg:#000;--bg2:#111;--bg3:#161616;
+  --t1:#FFF;--t2:#A0A0A0;--t3:#555;
+  --b1:rgba(255,255,255,.10);--b2:rgba(255,255,255,.06);
+  --pu:#7C3AED;--pu3:#A855F7;--pub:rgba(124,58,237,.15);--pur:rgba(124,58,237,.30);
+  --ok:#22C55E;--okb:rgba(34,197,94,.12);--okr:rgba(34,197,94,.28);
+  --er:#EF4444;--erb:rgba(239,68,68,.12);--err:rgba(239,68,68,.28);
+  --wn:#F59E0B;--wnb:rgba(245,158,11,.12);--wnr:rgba(245,158,11,.28);
+  --a2d:#6366F1;--a3d:#10B981;
+  --ff:'Inter',-apple-system,sans-serif;--rfull:9999px;
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body {
-  min-height: 100%; background: var(--bg); color: var(--t1);
-  font-family: var(--ff); -webkit-font-smoothing: antialiased;
-}
-body {
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: center; min-height: 100vh; padding: 24px 16px;
-  position: relative; overflow-x: hidden;
-}
-body::before {
-  content: ''; position: fixed; inset: 0; pointer-events: none;
-  background:
-    radial-gradient(ellipse 70% 50% at 20% 110%, rgba(124,58,237,0.14) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(180,40,40,0.09) 0%, transparent 55%);
-}
-
-/* ── WRAPPER ── */
-.wrap {
-  width: 100%; max-width: 420px; position: relative; z-index: 1;
-  display: flex; flex-direction: column; align-items: center; gap: 0;
-}
-
-/* ── LOGO / BRAND ── */
-.brand {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 32px;
-}
-.brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pu3); }
-.brand-name { font-size: 13px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--t1); }
-
-/* ── STATES ── */
-.state { width: 100%; display: none; flex-direction: column; align-items: center; }
-.state.active { display: flex; }
-
-/* ── STATE: LOADING ── */
-.ld-ring {
-  width: 36px; height: 36px; border-radius: 50%;
-  border: 1.5px solid rgba(124,58,237,0.2); border-top-color: var(--pu3);
-  animation: spin 0.8s linear infinite; margin-bottom: 16px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.ld-txt { font-size: 12px; color: var(--t3); letter-spacing: 1px; }
-
-/* ── CARD ── */
-.card {
-  width: 100%; background: var(--bg2); border: 0.5px solid var(--b1);
-  border-radius: 20px; overflow: hidden;
-}
-
-/* Card header - film info */
-.card-stripe { height: 3px; }
-.stripe-2d { background: var(--a2d); }
-.stripe-3d { background: var(--a3d); }
-.stripe-vip { background: var(--pu); }
-
-.card-head { padding: 20px 20px 16px; border-bottom: 0.5px solid var(--b2); }
-.card-tag {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
-  padding: 3px 9px; border-radius: var(--rfull); margin-bottom: 10px;
-}
-.tag-2d { background: rgba(99,102,241,0.12); color: #818CF8; border: 0.5px solid rgba(99,102,241,0.3); }
-.tag-3d { background: rgba(16,185,129,0.12); color: #34D399; border: 0.5px solid rgba(16,185,129,0.3); }
-.tag-vip { background: var(--pub); color: var(--pu3); border: 0.5px solid var(--pur); }
-
-.card-film-title { font-size: 22px; font-weight: 700; color: var(--t1); letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 4px; }
-.card-film-sub { font-size: 12px; color: var(--t3); }
-
-/* Cap strip */
-.cap-strip {
-  display: flex; align-items: center; gap: 0;
-  background: var(--bg3); border-bottom: 0.5px solid var(--b2);
-}
-.cap-item { flex: 1; padding: 12px 16px; text-align: center; }
-.cap-item + .cap-item { border-left: 0.5px solid var(--b2); }
-.cap-n { font-size: 22px; font-weight: 700; color: var(--t1); letter-spacing: -0.5px; line-height: 1; }
-.cap-n.ok { color: var(--ok); } .cap-n.wn { color: var(--wn); } .cap-n.er { color: var(--er); }
-.cap-l { font-size: 9px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--t3); margin-top: 3px; }
-.cap-bar-wrap { flex: 1.5; padding: 12px 16px; }
-.cap-bar { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-bottom: 5px; }
-.cap-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
-.cap-bar-lbl { font-size: 10px; color: var(--t3); display: flex; justify-content: space-between; }
-
-/* VIP guest welcome (pre-filled) */
-.vip-welcome {
-  padding: 18px 20px; background: var(--bg3); border-bottom: 0.5px solid var(--b2);
-  display: flex; align-items: center; gap: 12px;
-}
-.vip-avatar {
-  width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
-  background: var(--pub); border: 0.5px solid var(--pur); color: var(--pu3);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 700;
-}
-.vip-info {}
-.vip-name { font-size: 15px; font-weight: 600; color: var(--t1); margin-bottom: 2px; }
-.vip-org { font-size: 11px; color: var(--t3); }
-
-/* Form */
-.card-form { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-
-.field-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--t3); margin-bottom: 6px; display: block;
-}
-.field-input {
-  width: 100%; font-family: var(--ff); font-size: 15px; font-weight: 400;
-  padding: 13px 16px; background: var(--bg3); border: 0.5px solid var(--b1);
-  color: var(--t1); border-radius: 10px; outline: none;
-  transition: border-color 0.15s; min-height: 48px;
-}
-.field-input:focus { border-color: rgba(255,255,255,0.25); }
-.field-input::placeholder { color: var(--t3); }
-.field-input:read-only { color: var(--t2); cursor: default; }
-.field-input:read-only:focus { border-color: var(--b1); }
-
-/* CONFIRM button */
-.confirm-btn {
-  width: 100%; font-family: var(--ff); font-size: 15px; font-weight: 700;
-  padding: 15px; border-radius: 10px; cursor: pointer;
-  background: var(--pu); border: none; color: #fff;
-  margin-top: 4px; min-height: 52px; touch-action: manipulation;
-  transition: opacity 0.15s, transform 0.1s; letter-spacing: 0.2px;
-}
-.confirm-btn:active { transform: scale(0.98); }
-.confirm-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.confirm-btn.full { background: var(--erb); color: var(--er); border: 0.5px solid var(--err); }
-
-.terms {
-  font-size: 11px; color: var(--t3); text-align: center; line-height: 1.5;
-  padding: 0 4px;
-}
-
-/* ── STATE: SUCCESS ── */
-.success-card {
-  width: 100%; background: var(--bg2); border: 0.5px solid var(--okr);
-  border-radius: 20px; padding: 32px 24px; text-align: center;
-}
-.success-icon {
-  width: 56px; height: 56px; border-radius: 50%;
-  background: var(--okb); border: 0.5px solid var(--okr);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px; margin: 0 auto 18px;
-}
-.success-title { font-size: 22px; font-weight: 700; color: var(--t1); letter-spacing: -0.5px; margin-bottom: 6px; }
-.success-sub { font-size: 13px; color: var(--t3); margin-bottom: 24px; line-height: 1.5; }
-.success-name-badge {
-  display: inline-block; font-size: 15px; font-weight: 600; color: var(--t1);
-  padding: 10px 20px; background: var(--bg3); border: 0.5px solid var(--b1);
-  border-radius: var(--rfull); margin-bottom: 20px;
-}
-.success-film {
-  font-size: 12px; color: var(--t3); margin-bottom: 4px; letter-spacing: 0.5px;
-}
-.success-film strong { color: var(--t2); }
-.success-seats {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12px; color: var(--ok); font-weight: 500;
-  padding: 6px 12px; background: var(--okb); border: 0.5px solid var(--okr);
-  border-radius: var(--rfull);
-}
-
-/* ── STATE: ERROR ── */
-.error-card {
-  width: 100%; background: var(--bg2); border: 0.5px solid var(--err);
-  border-radius: 20px; padding: 32px 24px; text-align: center;
-}
-.error-icon {
-  width: 56px; height: 56px; border-radius: 50%;
-  background: var(--erb); border: 0.5px solid var(--err);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px; margin: 0 auto 18px;
-}
-.error-title { font-size: 20px; font-weight: 700; color: var(--er); margin-bottom: 8px; }
-.error-sub { font-size: 13px; color: var(--t3); line-height: 1.6; }
-
-/* ── FOOTER ── */
-.page-footer {
-  margin-top: 28px; text-align: center;
-  font-size: 11px; color: var(--t3); letter-spacing: 0.5px; line-height: 1.7;
-}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%;background:var(--bg);color:var(--t1);font-family:var(--ff);-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px 16px;position:relative;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 70% 50% at 20% 110%,rgba(124,58,237,.14) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 110%,rgba(180,40,40,.09) 0%,transparent 55%)}
+.wrap{width:100%;max-width:420px;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center}
+.brand{display:flex;align-items:center;gap:8px;margin-bottom:28px}
+.brand-dot{width:8px;height:8px;border-radius:50%;background:var(--pu3)}
+.brand-name{font-size:12px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--t2)}
+.state{width:100%;display:none;flex-direction:column;align-items:center}
+.state.active{display:flex}
+.ld-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 0}
+.ld-ring{width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(124,58,237,.2);border-top-color:var(--pu3);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ld-txt{font-size:12px;color:var(--t3)}
+.card{width:100%;background:var(--bg2);border:0.5px solid var(--b1);border-radius:20px;overflow:hidden}
+.card-stripe{height:3px}
+.stripe-2d{background:var(--a2d)}.stripe-3d{background:var(--a3d)}.stripe-vip{background:var(--pu)}
+.card-head{padding:20px 20px 16px;border-bottom:0.5px solid var(--b2)}
+.card-tag{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:3px 9px;border-radius:var(--rfull);margin-bottom:10px}
+.tag-2d{background:rgba(99,102,241,.12);color:#818CF8;border:0.5px solid rgba(99,102,241,.3)}
+.tag-3d{background:rgba(16,185,129,.12);color:#34D399;border:0.5px solid rgba(16,185,129,.3)}
+.tag-vip{background:var(--pub);color:var(--pu3);border:0.5px solid var(--pur)}
+.card-title{font-size:22px;font-weight:700;color:var(--t1);letter-spacing:-.5px;line-height:1.2;margin-bottom:4px}
+.card-sub{font-size:12px;color:var(--t3)}
+.vip-welcome{padding:16px 20px;background:var(--bg3);border-bottom:0.5px solid var(--b2);display:flex;align-items:center;gap:12px}
+.vip-avatar{width:42px;height:42px;border-radius:50%;flex-shrink:0;background:var(--pub);border:0.5px solid var(--pur);color:var(--pu3);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
+.vip-name{font-size:15px;font-weight:600;color:var(--t1);margin-bottom:2px}
+.vip-org{font-size:11px;color:var(--t3)}
+.cap-strip{display:flex;align-items:center;background:var(--bg3);border-bottom:0.5px solid var(--b2)}
+.cap-item{flex:1;padding:12px 16px;text-align:center}
+.cap-item+.cap-item{border-left:0.5px solid var(--b2)}
+.cap-n{font-size:22px;font-weight:700;color:var(--t1);letter-spacing:-.5px;line-height:1}
+.cap-n.ok{color:var(--ok)}.cap-n.wn{color:var(--wn)}.cap-n.er{color:var(--er)}
+.cap-l{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-top:3px}
+.cap-bar-wrap{flex:1.5;padding:12px 16px}
+.cap-bar{height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;margin-bottom:5px}
+.cap-bar-fill{height:100%;border-radius:2px;transition:width .4s}
+.cap-bar-lbl{font-size:10px;color:var(--t3);display:flex;justify-content:space-between}
+.card-form{padding:20px;display:flex;flex-direction:column;gap:12px}
+.field-label{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;display:block}
+.field-input{width:100%;font-family:var(--ff);font-size:15px;padding:13px 16px;background:var(--bg3);border:0.5px solid var(--b1);color:var(--t1);border-radius:10px;outline:none;min-height:48px;transition:border-color .15s;-webkit-appearance:none}
+.field-input:focus{border-color:rgba(255,255,255,.25)}.field-input::placeholder{color:var(--t3)}
+.field-input[readonly]{color:var(--t2);cursor:default}.field-input[readonly]:focus{border-color:var(--b1)}
+.confirm-btn{width:100%;font-family:var(--ff);font-size:15px;font-weight:700;padding:15px;border-radius:10px;cursor:pointer;background:var(--pu);border:none;color:#fff;margin-top:4px;min-height:52px;touch-action:manipulation;transition:opacity .15s,transform .1s;-webkit-appearance:none}
+.confirm-btn:active{transform:scale(.98)}.confirm-btn:disabled{opacity:.35;cursor:not-allowed}
+.confirm-btn.full{background:var(--erb);color:var(--er);border:0.5px solid var(--err)}
+.terms{font-size:11px;color:var(--t3);text-align:center;line-height:1.5;padding:0 4px}
+.alert-box{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:500}
+.alert-er{background:var(--erb);border:0.5px solid var(--err);color:var(--er)}
+.result-card{width:100%;border-radius:20px;padding:32px 24px;text-align:center}
+.rc-ok{background:var(--bg2);border:0.5px solid var(--okr)}
+.rc-dup{background:var(--bg2);border:0.5px solid var(--pur)}
+.rc-er{background:var(--bg2);border:0.5px solid var(--err)}
+.rc-wn{background:var(--bg2);border:0.5px solid var(--wnr)}
+.result-icon{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 18px}
+.ri-ok{background:var(--okb);border:0.5px solid var(--okr)}
+.ri-dup{background:var(--pub);border:0.5px solid var(--pur)}
+.ri-er{background:var(--erb);border:0.5px solid var(--err)}
+.ri-wn{background:var(--wnb);border:0.5px solid var(--wnr)}
+.result-title{font-size:22px;font-weight:700;color:var(--t1);letter-spacing:-.5px;margin-bottom:8px}
+.result-name{display:inline-block;font-size:15px;font-weight:600;color:var(--t1);padding:10px 20px;background:var(--bg3);border:0.5px solid var(--b1);border-radius:var(--rfull);margin-bottom:14px}
+.result-detail{font-size:12px;color:var(--t3);margin-bottom:10px;line-height:1.5}
+.result-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:6px 14px;border-radius:var(--rfull)}
+.rb-ok{background:var(--okb);color:var(--ok);border:0.5px solid var(--okr)}
+.rb-pu{background:var(--pub);color:var(--pu3);border:0.5px solid var(--pur)}
+.page-footer{margin-top:28px;text-align:center;font-size:11px;color:var(--t3);line-height:1.7}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="brand"><div class="brand-dot"></div><div class="brand-name">Parallax 2026</div></div>
 
-  <div class="brand">
-    <div class="brand-dot"></div>
-    <div class="brand-name">Parallax 2026</div>
-  </div>
-
-  <!-- STATE: LOADING -->
+  <!-- LOADING -->
   <div class="state active" id="s-loading">
-    <div class="ld-ring"></div>
-    <div class="ld-txt">Cargando…</div>
+    <div class="ld-wrap"><div class="ld-ring"></div><div class="ld-txt" id="ld-txt">Conectando…</div></div>
   </div>
 
-  <!-- STATE: FORM -->
+  <!-- FORM -->
   <div class="state" id="s-form">
     <div class="card">
       <div class="card-stripe" id="c-stripe"></div>
       <div class="card-head">
         <div class="card-tag" id="c-tag"></div>
-        <div class="card-film-title" id="c-title"></div>
-        <div class="card-film-sub" id="c-sub"></div>
+        <div class="card-title" id="c-title"></div>
+        <div class="card-sub" id="c-sub"></div>
       </div>
-
-      <!-- VIP welcome (shown only for pre-filled guests) -->
-      <div class="vip-welcome" id="c-vip-welcome" style="display:none">
+      <div id="c-vip-welcome" class="vip-welcome" style="display:none">
         <div class="vip-avatar" id="c-vip-ini"></div>
-        <div class="vip-info">
-          <div class="vip-name" id="c-vip-name"></div>
-          <div class="vip-org" id="c-vip-org"></div>
-        </div>
+        <div><div class="vip-name" id="c-vip-name"></div><div class="vip-org" id="c-vip-org"></div></div>
       </div>
-
-      <!-- Capacity strip -->
-      <div class="cap-strip" id="c-cap"></div>
-
-      <!-- Form fields -->
+      <div id="c-cap" class="cap-strip" style="display:none"></div>
       <div class="card-form">
+        <div id="c-alert" style="display:none"></div>
         <div>
-          <label class="field-label" for="inp-name">Tu nombre completo</label>
-          <input class="field-input" id="inp-name" type="text" autocomplete="name"
-            placeholder="Ej: Sofía Martínez García" spellcheck="false">
+          <label class="field-label" for="inp-name">Nombre completo</label>
+          <input class="field-input" id="inp-name" type="text" autocomplete="name" placeholder="Ej: Sofía Martínez García" spellcheck="false">
         </div>
         <div>
           <label class="field-label" for="inp-email">Correo electrónico</label>
-          <input class="field-input" id="inp-email" type="email" autocomplete="email"
-            placeholder="nombre@correo.com" inputmode="email">
+          <input class="field-input" id="inp-email" type="email" autocomplete="email" placeholder="nombre@correo.com" inputmode="email">
         </div>
-        <button class="confirm-btn" id="confirm-btn" onclick="doConfirm()">
-          Confirmar mi asistencia
-        </button>
-        <div class="terms">
-          Al confirmar, aceptas que tu nombre y correo quedarán registrados en la base de datos del evento.
-        </div>
+        <button class="confirm-btn" id="confirm-btn" onclick="doConfirm()">Confirmar mi asistencia</button>
+        <div class="terms">Al confirmar, aceptas que tus datos quedarán registrados en la base de datos del evento.</div>
       </div>
     </div>
   </div>
 
-  <!-- STATE: SUCCESS -->
+  <!-- SUCCESS -->
   <div class="state" id="s-ok">
-    <div class="success-card">
-      <div class="success-icon">✓</div>
-      <div class="success-title">¡Bienvenido!</div>
-      <div class="success-name-badge" id="ok-name"></div>
-      <div class="success-film" id="ok-film"></div>
-      <div class="success-seats" id="ok-seats"></div>
-      <div class="success-sub" style="margin-top:16px" id="ok-sub"></div>
+    <div class="result-card rc-ok">
+      <div class="result-icon ri-ok">✓</div>
+      <div class="result-title">¡Bienvenido!</div>
+      <div class="result-name" id="ok-name"></div>
+      <div class="result-detail" id="ok-detail"></div>
+      <div class="result-badge rb-ok" id="ok-badge"></div>
     </div>
   </div>
 
-  <!-- STATE: ALREADY REGISTERED -->
+  <!-- DUPLICATE -->
   <div class="state" id="s-dup">
-    <div class="success-card" style="border-color:var(--pur)">
-      <div class="success-icon" style="background:var(--pub);border-color:var(--pur)">👋</div>
-      <div class="success-title">Ya estás registrado</div>
-      <div class="success-name-badge" id="dup-name"></div>
-      <div class="success-sub">Tu entrada ya fue confirmada anteriormente. ¡Nos vemos en el Teatro UDEM el 22 de mayo!</div>
+    <div class="result-card rc-dup">
+      <div class="result-icon ri-dup">👋</div>
+      <div class="result-title">Ya estás registrado</div>
+      <div class="result-name" id="dup-name"></div>
+      <div class="result-detail">Tu entrada ya fue confirmada anteriormente. ¡Nos vemos el 22 de mayo!</div>
     </div>
   </div>
 
-  <!-- STATE: FULL -->
+  <!-- FULL -->
   <div class="state" id="s-full">
-    <div class="error-card">
-      <div class="error-icon">⚠</div>
-      <div class="error-title">Aforo completo</div>
-      <div class="error-sub">El aforo para este cortometraje ha alcanzado su capacidad máxima.<br>Acércate al staff en la entrada para más información.</div>
+    <div class="result-card rc-wn">
+      <div class="result-icon ri-wn">⚠</div>
+      <div class="result-title" style="color:var(--wn)">Aforo completo</div>
+      <div class="result-detail">El aforo para este cortometraje ha alcanzado su capacidad máxima. Acércate al staff en la entrada.</div>
     </div>
   </div>
 
-  <!-- STATE: ERROR -->
+  <!-- ERROR -->
   <div class="state" id="s-error">
-    <div class="error-card">
-      <div class="error-icon">✕</div>
-      <div class="error-title">Enlace no válido</div>
-      <div class="error-sub" id="err-msg">Este QR no corresponde a ningún cortometraje o invitado registrado en Parallax 2026.</div>
+    <div class="result-card rc-er">
+      <div class="result-icon ri-er">✕</div>
+      <div class="result-title" style="color:var(--er)">Enlace no válido</div>
+      <div class="result-detail" id="err-msg">Este QR no corresponde a ningún registro en Parallax 2026.</div>
     </div>
   </div>
 
-  <div class="page-footer">
-    Teatro UDEM · San Pedro Garza García<br>
-    Jueves 22 de mayo de 2026
-  </div>
+  <div class="page-footer">Teatro UDEM · San Pedro Garza García<br>Jueves 22 de mayo de 2026</div>
 </div>
 
 <script>
-/* ══ FIREBASE CONFIG — same as main system ══ */
+/* ══ FIREBASE CONFIG ══ */
 const FB_CFG = {
-  apiKey:            "AIzaSyDemo_ReplaceWithYourKey",
-  authDomain:        "parallax2026.firebaseapp.com",
-  databaseURL:       "https://parallax2026-default-rtdb.firebaseio.com",
-  projectId:         "parallax2026",
-  storageBucket:     "parallax2026.appspot.com",
-  messagingSenderId: "000000000000",
-  appId:             "1:000000000000:web:abc123"
+  apiKey:"AIzaSyDemo_ReplaceWithYourKey",
+  authDomain:"parallax2026.firebaseapp.com",
+  databaseURL:"https://parallax2026-default-rtdb.firebaseio.com",
+  projectId:"parallax2026",
+  storageBucket:"parallax2026.appspot.com",
+  messagingSenderId:"000000000000",
+  appId:"1:000000000000:web:abc123"
 };
 
 /* ══ FILM DATA ══ */
 const FILMS = [
-  {id:'afterlight', b:'2D', t:'Afterlight', alumnos:15, inv:58},
-  {id:'battle',     b:'2D', t:'Battle of the Batter', alumnos:5, inv:35},
-  {id:'beatbox',    b:'2D', t:'Beatbox', alumnos:6, inv:30},
-  {id:'flama',      b:'2D', t:'Flama', alumnos:5, inv:31},
-  {id:'freshtzu',   b:'2D', t:'Freshtzu', alumnos:4, inv:21},
-  {id:'malita',     b:'2D', t:"Malita Pa' Ti", alumnos:6, inv:32},
-  {id:'otterside',  b:'2D', t:'Otterside', alumnos:7, inv:37},
-  {id:'ronnie',     b:'2D', t:'Ronnie en la Luna', alumnos:7, inv:29},
-  {id:'blockhead',  b:'3D', t:'Blockhead', alumnos:1, inv:5},
-  {id:'contact',    b:'3D', t:'Contact', alumnos:1, inv:5},
-  {id:'escamas',    b:'3D', t:'Escamas', alumnos:7, inv:50},
-  {id:'ineedspace', b:'3D', t:'I Need Some Space', alumnos:4, inv:18},
-  {id:'lonestar',   b:'3D', t:'Lone Star Store', alumnos:3, inv:13},
-  {id:'recuerda',   b:'3D', t:'Recuerda que te amo', alumnos:5, inv:31},
-  {id:'rex',        b:'3D', t:'Rex', alumnos:3, inv:14},
-  {id:'ungiro',     b:'3D', t:'Un giro en el agua', alumnos:0, inv:0},
+  {id:'afterlight', b:'2D',t:'Afterlight',           alumnos:15,inv:58},
+  {id:'battle',     b:'2D',t:'Battle of the Batter', alumnos:5, inv:35},
+  {id:'beatbox',    b:'2D',t:'Beatbox',               alumnos:6, inv:30},
+  {id:'flama',      b:'2D',t:'Flama',                 alumnos:5, inv:31},
+  {id:'freshtzu',   b:'2D',t:'Freshtzu',              alumnos:4, inv:21},
+  {id:'malita',     b:'2D',t:"Malita Pa' Ti",         alumnos:6, inv:32},
+  {id:'otterside',  b:'2D',t:'Otterside',             alumnos:7, inv:37},
+  {id:'ronnie',     b:'2D',t:'Ronnie en la Luna',     alumnos:7, inv:29},
+  {id:'blockhead',  b:'3D',t:'Blockhead',             alumnos:1, inv:5},
+  {id:'contact',    b:'3D',t:'Contact',               alumnos:1, inv:5},
+  {id:'escamas',    b:'3D',t:'Escamas',               alumnos:7, inv:50},
+  {id:'ineedspace', b:'3D',t:'I Need Some Space',     alumnos:4, inv:18},
+  {id:'lonestar',   b:'3D',t:'Lone Star Store',       alumnos:3, inv:13},
+  {id:'recuerda',   b:'3D',t:'Recuerda que te amo',   alumnos:5, inv:31},
+  {id:'rex',        b:'3D',t:'Rex',                   alumnos:3, inv:14},
+  {id:'ungiro',     b:'3D',t:'Un giro en el agua',    alumnos:0, inv:0},
 ];
 
 /* ══ VIP DATA ══ */
-const VIP_GUESTS = [
-  {id:'sl1',name:'Eduardo Morales',org:'Festival Internacional Santa Lucía',orgId:'sl'},
-  {id:'sl2',name:'Catalina Alvarez',org:'Festival Internacional Santa Lucía',orgId:'sl'},
-  {id:'sl3',name:'Erika López',org:'Festival Internacional Santa Lucía',orgId:'sl'},
-  {id:'sl4',name:'Araceli Mendivil',org:'Festival Internacional Santa Lucía',orgId:'sl'},
-  {id:'sl5',name:'Mauricio Alvarez Sanchez',org:'Festival Internacional Santa Lucía',orgId:'sl'},
-  {id:'sl6',name:'Miguel Ángel Aguilera',org:'Festival Internacional Santa Lucía',orgId:'sl'},
-  {id:'sl7',name:'Caterina Aquino',org:'Festival Internacional Santa Lucía',orgId:'sl'},
-  {id:'hb1',name:'Fedro Ceballos',org:'Hey Banco',orgId:'hb'},
-  {id:'kw1',name:'Alejandra Meza',org:'Keywords Studio',orgId:'kw'},
-  {id:'pp1',name:'Angel Hernandez',org:'Pixel Perfect',orgId:'pp'},
-  {id:'mm1',name:'David Davila',org:'MIMEC',orgId:'mm'},
-  {id:'mm2',name:'Mariana Ortiz',org:'MIMEC',orgId:'mm'},
-  {id:'ar1',name:'Rubi Armass',org:'Armass Productions',orgId:'ar'},
-  {id:'in1',name:'Leo Marz',org:'Independiente',orgId:'in'},
-  {id:'in2',name:'Angel Corona',org:'Independiente',orgId:'in'},
-  {id:'en1',name:'Elena Gaytan',org:'El Norte',orgId:'en'},
-  {id:'vm1',name:'Fernanda Garcia',org:'Vital Moves',orgId:'vm'},
-  {id:'vm2',name:'Cecillia Cardoso',org:'Vital Moves',orgId:'vm'},
-  {id:'ud1',name:'Carlos Basurto',org:'UDEM',orgId:'ud'},
-  {id:'ud2',name:'Jessica Ochoa',org:'UDEM',orgId:'ud'},
-  {id:'ud3',name:'Lesly Olan',org:'UDEM',orgId:'ud'},
-  {id:'ud4',name:'Eduardo Guizar',org:'UDEM',orgId:'ud'},
-  {id:'ud5',name:'Diana Chapa',org:'UDEM',orgId:'ud'},
-  {id:'ud6',name:'Monica Chapa',org:'UDEM',orgId:'ud'},
-  {id:'ud7',name:'Daniela Estrada',org:'UDEM',orgId:'ud'},
-  {id:'ud8',name:'Maria Eugenia Santos',org:'UDEM',orgId:'ud'},
-  {id:'ud9',name:'Cristobal Guerra',org:'UDEM',orgId:'ud'},
-  {id:'ud10',name:'Amparo Vazquez',org:'UDEM',orgId:'ud'},
-  {id:'ud11',name:'Rosa Quiroz',org:'UDEM',orgId:'ud'},
-  {id:'ud12',name:'Patricia Beltran',org:'UDEM',orgId:'ud'},
-  {id:'ud13',name:'Guillermo Lavin',org:'UDEM',orgId:'ud'},
-  {id:'ud14',name:'Francisco González',org:'UDEM',orgId:'ud'},
-  {id:'ud15',name:'Martin Garcia',org:'UDEM',orgId:'ud'},
-  {id:'ud16',name:'Angel Martinez',org:'UDEM',orgId:'ud'},
-  {id:'ud17',name:'Abraham Lozano',org:'UDEM',orgId:'ud'},
-  {id:'ud18',name:'Mariana Baidon',org:'UDEM',orgId:'ud'},
-  {id:'ud19',name:'Osmar Garduño',org:'UDEM',orgId:'ud'},
-  {id:'ud20',name:'Abril Garza',org:'UDEM',orgId:'ud'},
-  {id:'ud21',name:'Maria Fernanda Esquivel',org:'UDEM',orgId:'ud'},
-  {id:'ud22',name:'Jair Salazar',org:'UDEM',orgId:'ud'},
-  /* Acompañantes con QR propio */
-  {id:'ud11c1',name:'Acompañante 1 — Rosa Quiroz',org:'UDEM',orgId:'ud'},
-  {id:'ud11c2',name:'Acompañante 2 — Rosa Quiroz',org:'UDEM',orgId:'ud'},
-  {id:'ud11c3',name:'Acompañante 3 — Rosa Quiroz',org:'UDEM',orgId:'ud'},
-  {id:'ud14c1',name:'Acompañante 1 — Francisco González',org:'UDEM',orgId:'ud'},
-  {id:'ud15c1',name:'Acompañante 1 — Martin Garcia',org:'UDEM',orgId:'ud'},
-  {id:'ud15c2',name:'Acompañante 2 — Martin Garcia',org:'UDEM',orgId:'ud'},
-  {id:'in1c1', name:'Acompañante 1 — Leo Marz',org:'Independiente',orgId:'in'},
-  {id:'in1c2', name:'Acompañante 2 — Leo Marz',org:'Independiente',orgId:'in'},
-  {id:'kw1c1', name:'Acompañante 1 — Alejandra Meza',org:'Keywords Studio',orgId:'kw'},
+const VIP = [
+  {id:'sl1', name:'Eduardo Morales',          org:'Festival Internacional Santa Lucía'},
+  {id:'sl2', name:'Catalina Alvarez',         org:'Festival Internacional Santa Lucía'},
+  {id:'sl3', name:'Erika López',              org:'Festival Internacional Santa Lucía'},
+  {id:'sl4', name:'Araceli Mendivil',         org:'Festival Internacional Santa Lucía'},
+  {id:'sl5', name:'Mauricio Alvarez Sanchez', org:'Festival Internacional Santa Lucía'},
+  {id:'sl6', name:'Miguel Ángel Aguilera',    org:'Festival Internacional Santa Lucía'},
+  {id:'sl7', name:'Caterina Aquino',          org:'Festival Internacional Santa Lucía'},
+  {id:'hb1', name:'Fedro Ceballos',           org:'Hey Banco'},
+  {id:'kw1', name:'Alejandra Meza',           org:'Keywords Studio'},
+  {id:'pp1', name:'Angel Hernandez',          org:'Pixel Perfect'},
+  {id:'mm1', name:'David Davila',             org:'MIMEC'},
+  {id:'mm2', name:'Mariana Ortiz',            org:'MIMEC'},
+  {id:'ar1', name:'Rubi Armass',              org:'Armass Productions'},
+  {id:'in1', name:'Leo Marz',                 org:'Independiente'},
+  {id:'in2', name:'Angel Corona',             org:'Independiente'},
+  {id:'en1', name:'Elena Gaytan',             org:'El Norte'},
+  {id:'vm1', name:'Fernanda Garcia',          org:'Vital Moves'},
+  {id:'vm2', name:'Cecillia Cardoso',         org:'Vital Moves'},
+  {id:'ud1', name:'Carlos Basurto',           org:'UDEM'},
+  {id:'ud2', name:'Jessica Ochoa',            org:'UDEM'},
+  {id:'ud3', name:'Lesly Olan',               org:'UDEM'},
+  {id:'ud4', name:'Eduardo Guizar',           org:'UDEM'},
+  {id:'ud5', name:'Diana Chapa',              org:'UDEM'},
+  {id:'ud6', name:'Monica Chapa',             org:'UDEM'},
+  {id:'ud7', name:'Daniela Estrada',          org:'UDEM'},
+  {id:'ud8', name:'Maria Eugenia Santos',     org:'UDEM'},
+  {id:'ud9', name:'Cristobal Guerra',         org:'UDEM'},
+  {id:'ud10',name:'Amparo Vazquez',           org:'UDEM'},
+  {id:'ud11',name:'Rosa Quiroz',              org:'UDEM'},
+  {id:'ud12',name:'Patricia Beltran',         org:'UDEM'},
+  {id:'ud13',name:'Guillermo Lavin',          org:'UDEM'},
+  {id:'ud14',name:'Francisco González',       org:'UDEM'},
+  {id:'ud15',name:'Martin Garcia',            org:'UDEM'},
+  {id:'ud16',name:'Angel Martinez',           org:'UDEM'},
+  {id:'ud17',name:'Abraham Lozano',           org:'UDEM'},
+  {id:'ud18',name:'Mariana Baidon',           org:'UDEM'},
+  {id:'ud19',name:'Osmar Garduño',            org:'UDEM'},
+  {id:'ud20',name:'Abril Garza',              org:'UDEM'},
+  {id:'ud21',name:'Maria Fernanda Esquivel',  org:'UDEM'},
+  {id:'ud22',name:'Jair Salazar',             org:'UDEM'},
+  {id:'ud11c1',name:'Acompañante 1 · Rosa Quiroz',        org:'UDEM'},
+  {id:'ud11c2',name:'Acompañante 2 · Rosa Quiroz',        org:'UDEM'},
+  {id:'ud11c3',name:'Acompañante 3 · Rosa Quiroz',        org:'UDEM'},
+  {id:'ud14c1',name:'Acompañante 1 · Francisco González', org:'UDEM'},
+  {id:'ud15c1',name:'Acompañante 1 · Martin Garcia',      org:'UDEM'},
+  {id:'ud15c2',name:'Acompañante 2 · Martin Garcia',      org:'UDEM'},
+  {id:'in1c1', name:'Acompañante 1 · Leo Marz',           org:'Independiente'},
+  {id:'in1c2', name:'Acompañante 2 · Leo Marz',           org:'Independiente'},
+  {id:'kw1c1', name:'Acompañante 1 · Alejandra Meza',     org:'Keywords Studio'},
 ];
 
-/* ══ PARSE URL PARAMS ══ */
+/* ══ URL PARAMS ══ */
 const params = new URLSearchParams(window.location.search);
-const MODE   = params.get('m') || 'film'; // 'film' | 'vip'
-const TARGET = params.get('t') || '';     // filmId or vipGuestId
+const MODE   = params.get('m') || 'film';
+const TARGET = params.get('t') || '';
 const DEMO   = params.get('demo') === '1';
 
-let db = null, filmRef = null, regRef = null;
-let filmData = null, vipData = null;
+/* ══ STATE ══ */
+let db = null, filmData = null, vipData = null;
 let currentCap = 0, currentUsed = 0;
+
+/* ══ UTILS ══ */
+const $ = id => document.getElementById(id);
+function setState(id) {
+  document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+  $('s-'+id).classList.add('active');
+}
+function setLoader(t) { $('ld-txt').textContent = t; setState('loading'); }
+function showError(m) { $('err-msg').textContent = m; setState('error'); }
+function now() { return new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); }
+function ini(n) { return n.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
+function shake(id) {
+  const el=$(id); el.style.borderColor='var(--er)'; el.style.animation='shake .35s ease';
+  setTimeout(()=>{el.style.borderColor='';el.style.animation='';},400);
+}
 
 /* ══ INIT ══ */
 function init() {
-  if(!TARGET) { showError('Parámetro de destino no encontrado en el QR.'); return; }
+  if(!TARGET) { showError('QR sin parámetros. Solicita un nuevo QR al staff.'); return; }
 
   if(MODE === 'vip') {
-    vipData = VIP_GUESTS.find(g => g.id === TARGET);
-    if(!vipData) { showError('Invitado VIP no encontrado en el sistema.'); return; }
+    vipData = VIP.find(g => g.id === TARGET);
+    if(!vipData) { showError('Invitado no encontrado. Verifica que el QR sea correcto.'); return; }
   } else {
     filmData = FILMS.find(f => f.id === TARGET);
-    if(!filmData) { showError('Cortometraje no encontrado en el sistema.'); return; }
+    if(!filmData) { showError('Cortometraje no encontrado. Verifica que el QR sea correcto.'); return; }
+    /* ✅ FIX 1: Set capacity immediately from local data — never 0 */
+    currentCap = filmData.alumnos + filmData.inv;
+    currentUsed = 0;
   }
 
-  if(DEMO) { initDemo(); return; }
+  if(DEMO) { MODE==='vip' ? setupVipForm() : setupFilmForm(); return; }
+
+  /* Firebase with 8s timeout — always shows form even if Firebase fails */
+  let fbDone = false;
+  const timeout = setTimeout(() => {
+    if(fbDone) return;
+    fbDone = true;
+    console.warn('Firebase timeout — proceeding without realtime');
+    db = null;
+    MODE==='vip' ? setupVipForm() : setupFilmForm();
+  }, 8000);
 
   try {
-    firebase.initializeApp(FB_CFG);
-    db = firebase.database();
+    const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FB_CFG);
+    db = app.database();
+
     if(MODE === 'film') {
-      filmRef = db.ref('screenings/' + TARGET);
-      filmRef.on('value', snap => {
-        const d = snap.val() || {used:0};
-        currentUsed = d.used || 0;
-        currentCap = filmData.alumnos + filmData.inv;
+      fbDone = true; clearTimeout(timeout);
+      setupFilmForm(); /* ✅ Show form immediately */
+      /* Then attach listener for live counter */
+      db.ref('screenings/'+TARGET).on('value', snap => {
+        currentUsed = (snap.val()||{used:0}).used || 0;
+        /* currentCap never changes — stays from local data */
         updateCapUI();
-      });
+      }, () => { /* ignore listener errors */ });
+
     } else {
-      // For VIP — just check if already registered
-      regRef = db.ref('vip_checkins/' + TARGET);
-    }
-    setupForm();
-  } catch(e) {
-    initDemo();
-  }
-}
-
-function initDemo() {
-  currentUsed = 0;
-  currentCap = filmData ? (filmData.alumnos + filmData.inv) : 1;
-  setupForm();
-}
-
-/* ══ SETUP FORM ══ */
-function setupForm() {
-  const is2d = filmData ? filmData.b === '2D' : false;
-  const isVip = MODE === 'vip';
-
-  // Stripe color
-  const stripe = document.getElementById('c-stripe');
-  stripe.className = 'card-stripe ' + (isVip ? 'stripe-vip' : is2d ? 'stripe-2d' : 'stripe-3d');
-
-  // Tag
-  const tag = document.getElementById('c-tag');
-  tag.className = 'card-tag ' + (isVip ? 'tag-vip' : is2d ? 'tag-2d' : 'tag-3d');
-  tag.textContent = isVip ? 'Invitado Especial · VIP' : `Bloque ${filmData.b} · Animación`;
-
-  // Title & sub
-  if(isVip) {
-    document.getElementById('c-title').textContent = 'Parallax 2026';
-    document.getElementById('c-sub').textContent = 'Noche de Gala · Teatro UDEM · 22 de mayo';
-
-    // VIP welcome
-    const welcome = document.getElementById('c-vip-welcome');
-    welcome.style.display = 'flex';
-    document.getElementById('c-vip-ini').textContent = vipData.name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
-    document.getElementById('c-vip-name').textContent = vipData.name;
-    document.getElementById('c-vip-org').textContent = vipData.org;
-
-    // Pre-fill name (read-only for VIP)
-    const nameInput = document.getElementById('inp-name');
-    nameInput.value = vipData.name;
-    nameInput.readOnly = true;
-
-    // Cap strip not needed for VIP — hide
-    document.getElementById('c-cap').style.display = 'none';
-
-    // Check if already checked in
-    if(db) {
-      db.ref('vip_checkins/' + TARGET).once('value').then(snap => {
+      /* VIP: check existing registration */
+      setLoader('Cargando perfil VIP…');
+      db.ref('vip_checkins/'+TARGET).once('value').then(snap => {
+        fbDone = true; clearTimeout(timeout);
         if(snap.val() && snap.val().checkedIn) {
-          showDup(vipData.name);
+          showDup(snap.val().name || vipData.name);
         } else {
-          setState('form');
+          setupVipForm();
         }
+      }).catch(() => {
+        /* ✅ FIX 2: If Firebase check fails, show form anyway */
+        fbDone = true; clearTimeout(timeout);
+        setupVipForm();
       });
-    } else { setState('form'); }
-
-  } else {
-    document.getElementById('c-title').textContent = filmData.t;
-    document.getElementById('c-sub').textContent = filmData.alumnos + ' alumnos · ' + filmData.inv + ' invitados';
-    updateCapUI();
-    setState('form');
+    }
+  } catch(e) {
+    clearTimeout(timeout); fbDone = true;
+    db = null;
+    MODE==='vip' ? setupVipForm() : setupFilmForm();
   }
 }
 
-/* ══ CAP UI ══ */
-function updateCapUI() {
-  const avail = Math.max(0, currentCap - currentUsed);
-  const pct = currentCap ? Math.min(100, Math.round(currentUsed / currentCap * 100)) : 0;
-  const s = avail === 0 ? 'er' : avail <= Math.ceil(currentCap * .15) ? 'wn' : 'ok';
-  const ac = s==='ok'?'var(--ok)':s==='wn'?'var(--wn)':'var(--er)';
+/* ══ SETUP FILM FORM ══ */
+function setupFilmForm() {
+  const is2d = filmData.b === '2D';
+  $('c-stripe').className = 'card-stripe ' + (is2d ? 'stripe-2d' : 'stripe-3d');
+  const tag = $('c-tag');
+  tag.className = 'card-tag ' + (is2d ? 'tag-2d' : 'tag-3d');
+  tag.textContent = `Bloque ${filmData.b} · Animación`;
+  $('c-title').textContent = filmData.t;
+  $('c-sub').textContent = `${filmData.alumnos} alumnos · ${filmData.inv} invitados`;
+  $('c-vip-welcome').style.display = 'none';
+  $('c-cap').style.display = 'flex';
+  updateCapUI();
+  setState('form');
+}
 
-  document.getElementById('c-cap').innerHTML = `
-    <div class="cap-item">
-      <div class="cap-n">${currentUsed}</div>
-      <div class="cap-l">Entradas</div>
-    </div>
+/* ══ SETUP VIP FORM ══ */
+function setupVipForm() {
+  $('c-stripe').className = 'card-stripe stripe-vip';
+  const tag = $('c-tag');
+  tag.className = 'card-tag tag-vip';
+  tag.textContent = 'Invitado Especial · VIP';
+  $('c-title').textContent = 'Parallax 2026';
+  $('c-sub').textContent = 'Noche de Gala · Teatro UDEM · 22 de mayo';
+  $('c-vip-welcome').style.display = 'flex';
+  $('c-vip-ini').textContent = ini(vipData.name);
+  $('c-vip-name').textContent = vipData.name;
+  $('c-vip-org').textContent = vipData.org;
+  const inp = $('inp-name');
+  inp.value = vipData.name; inp.readOnly = true;
+  $('c-cap').style.display = 'none';
+  setState('form');
+}
+
+/* ══ CAPACITY UI ══ */
+function updateCapUI() {
+  if(!currentCap || currentCap <= 0) return; /* safety guard */
+  const avail = Math.max(0, currentCap - currentUsed);
+  const pct   = Math.min(100, Math.round(currentUsed / currentCap * 100));
+  const s     = avail === 0 ? 'er' : avail <= Math.ceil(currentCap * .15) ? 'wn' : 'ok';
+  const ac    = s==='ok'?'var(--ok)':s==='wn'?'var(--wn)':'var(--er)';
+  $('c-cap').innerHTML = `
+    <div class="cap-item"><div class="cap-n">${currentUsed}</div><div class="cap-l">Entradas</div></div>
     <div class="cap-bar-wrap">
       <div class="cap-bar"><div class="cap-bar-fill" style="width:${pct}%;background:${ac}"></div></div>
       <div class="cap-bar-lbl"><span>${pct}% ocupado</span><span>${currentCap} cap.</span></div>
     </div>
-    <div class="cap-item">
-      <div class="cap-n ${s}">${avail}</div>
-      <div class="cap-l">Disponible</div>
-    </div>
+    <div class="cap-item"><div class="cap-n ${s}">${avail}</div><div class="cap-l">Disponible</div></div>
   `;
-
-  const btn = document.getElementById('confirm-btn');
+  const btn = $('confirm-btn');
   if(avail <= 0) {
-    btn.disabled = true; btn.className = 'confirm-btn full';
-    btn.textContent = 'Aforo completo';
-  } else {
-    btn.disabled = false; btn.className = 'confirm-btn';
-    btn.textContent = 'Confirmar mi asistencia';
+    btn.disabled = true; btn.className = 'confirm-btn full'; btn.textContent = 'Aforo completo';
+  } else if(!btn.disabled) {
+    btn.className = 'confirm-btn'; btn.textContent = 'Confirmar mi asistencia';
   }
 }
 
 /* ══ CONFIRM ══ */
 async function doConfirm() {
-  const name  = document.getElementById('inp-name').value.trim();
-  const email = document.getElementById('inp-email').value.trim();
+  const name  = $('inp-name').value.trim();
+  const email = $('inp-email').value.trim();
+  if(!name)  { shake('inp-name'); return; }
+  if(!email || !email.includes('@') || !email.includes('.')) { shake('inp-email'); return; }
 
-  if(!name)  { shake('inp-name');  return; }
-  if(!email || !email.includes('@')) { shake('inp-email'); return; }
-
-  const btn = document.getElementById('confirm-btn');
+  const btn = $('confirm-btn');
   btn.disabled = true; btn.textContent = 'Verificando…';
+  const timeStr = now(), ts = new Date().toISOString();
 
   try {
     if(MODE === 'vip') {
-      // ── VIP: check for existing registration by guestId (unique key)
-      const regKey = 'vip_checkins/' + TARGET;
       if(db) {
-        const snap = await db.ref(regKey).once('value');
-        if(snap.val() && snap.val().checkedIn) {
-          showDup(snap.val().name || name); return;
-        }
+        const snap = await db.ref('vip_checkins/'+TARGET).once('value');
+        if(snap.val()?.checkedIn) { showDup(snap.val().name||vipData.name); return; }
         btn.textContent = 'Registrando…';
-        const timestamp = new Date().toISOString();
-        const timeStr = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
-        // Write VIP checkin — one record per guestId, no duplicates possible
-        await db.ref(regKey).set({
-          checkedIn: true, name: vipData.name, email,
-          org: vipData.org, timestamp, timeStr, target: TARGET
+        await db.ref('vip_checkins/'+TARGET).set({
+          checkedIn:true, name:vipData.name, email, org:vipData.org, timeStr, ts, guestId:TARGET
         });
-        // Update main VIP state for the dashboard
-        const curVip = (await db.ref('vip/' + TARGET).once('value')).val() || {};
-        await db.ref('vip/' + TARGET).set({...curVip, in: true, time: timeStr});
+        const cur = (await db.ref('vip/'+TARGET).once('value')).val()||{};
+        await db.ref('vip/'+TARGET).set({...cur, in:true, time:timeStr});
       }
       showSuccess(vipData.name, 'Invitado Especial · Parallax 2026', null);
 
     } else {
-      // ── FILM: check capacity, then register with email as dedup key
-      const avail = Math.max(0, currentCap - currentUsed);
-      if(avail <= 0) {
-        btn.disabled = true; btn.className = 'confirm-btn full';
-        btn.textContent = 'Aforo completo'; return;
-      }
-      btn.textContent = 'Registrando…';
-      const timestamp = new Date().toISOString();
-      const timeStr = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-
+      let latestUsed = currentUsed;
       if(db) {
-        // Use email hash as dedup key so same person can't register twice
-        const emailKey = email.toLowerCase().replace(/[^a-z0-9]/g,'_');
-        const dedupRef = db.ref('attendees_dedup/' + TARGET + '/' + emailKey);
-        const dedupSnap = await dedupRef.once('value');
-        if(dedupSnap.val()) {
-          // Already registered — show success with their previous name
-          showSuccess(dedupSnap.val().name || name, filmData.t, Math.max(0, currentCap - currentUsed));
-          return;
-        }
-        // Use a transaction to safely increment the counter
-        let finalUsed = currentUsed;
-        await db.ref('screenings/' + TARGET).transaction(cur => {
-          const d = cur || {used:0};
-          if(d.used >= currentCap) return; // abort if full
-          d.used = (d.used||0) + 1;
-          finalUsed = d.used;
-          return d;
+        const s = await db.ref('screenings/'+TARGET).once('value');
+        latestUsed = (s.val()||{used:0}).used||0;
+      }
+      const avail = Math.max(0, currentCap - latestUsed);
+      if(avail <= 0) { setState('full'); return; }
+      btn.textContent = 'Registrando…';
+      if(db) {
+        const eKey = email.toLowerCase().replace(/[^a-z0-9]/g,'_').substring(0,80);
+        const dedupRef = db.ref('attendees_dedup/'+TARGET+'/'+eKey);
+        const dd = await dedupRef.once('value');
+        if(dd.val()) { showSuccess(dd.val().name||name, filmData.t, avail); return; }
+        let finalUsed = latestUsed;
+        const tx = await db.ref('screenings/'+TARGET).transaction(cur => {
+          const d = cur||{used:0};
+          if((d.used||0) >= currentCap) return;
+          finalUsed = (d.used||0)+1;
+          return {used:finalUsed};
         });
-        // Save attendee record + dedup marker
-        const entry = {name, email, timestamp, timeStr, target: TARGET, bloque: filmData.b, filmTitle: filmData.t};
+        if(!tx.committed) { setState('full'); return; }
+        const entry = {name,email,ts,timeStr,filmId:TARGET,bloque:filmData.b,filmTitle:filmData.t};
         await Promise.all([
-          db.ref('attendees/' + TARGET).push(entry),
+          db.ref('attendees/'+TARGET).push(entry),
           dedupRef.set(entry),
-          db.ref('eventlog').push({time: timeStr, title: filmData.t, bloque: filmData.b, qty: 1, name, email})
+          db.ref('eventlog').push({time:timeStr,title:filmData.t,bloque:filmData.b,qty:1,name,email})
         ]);
-        showSuccess(name, filmData.t, Math.max(0, currentCap - finalUsed));
+        showSuccess(name, filmData.t, Math.max(0, currentCap-finalUsed));
       } else {
-        // Demo mode
-        currentUsed++;
-        showSuccess(name, filmData.t, Math.max(0, currentCap - currentUsed));
+        currentUsed = Math.min(currentCap, currentUsed+1);
+        updateCapUI();
+        showSuccess(name, filmData.t, Math.max(0, currentCap-currentUsed));
       }
     }
   } catch(e) {
-    console.error('Registration error:', e);
+    console.error(e);
     btn.disabled = false; btn.textContent = 'Confirmar mi asistencia';
-    alert('Error al registrar. Verifica tu conexión e intenta de nuevo.');
+    const al = $('c-alert');
+    al.className = 'alert-box alert-er'; al.textContent = 'Error de conexión. Intenta de nuevo.';
+    al.style.display = 'flex';
+    setTimeout(()=>al.style.display='none', 4000);
   }
 }
 
-
-/* ══ UI HELPERS ══ */
-function setState(id) {
-  document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
-  document.getElementById('s-' + id).classList.add('active');
-}
-
-function showSuccess(name, film, avail) {
-  document.getElementById('ok-name').textContent = name;
-  document.getElementById('ok-film').innerHTML = `Acceso confirmado para <strong>${film}</strong>`;
-  document.getElementById('ok-sub').textContent = '¡Nos vemos en el Teatro UDEM el 22 de mayo! Puedes cerrar esta página.';
-  if(avail !== null) {
-    document.getElementById('ok-seats').innerHTML = `${avail} lugares restantes`;
-  } else {
-    document.getElementById('ok-seats').innerHTML = `✓ Invitado especial registrado`;
-  }
+/* ══ RESULTS ══ */
+function showSuccess(name, ctx, avail) {
+  $('ok-name').textContent = name;
+  $('ok-detail').textContent = `Acceso confirmado · ${ctx}`;
+  const b = $('ok-badge');
+  b.textContent = avail !== null ? `${avail} lugares restantes` : '✓ Invitado especial registrado';
+  b.className = 'result-badge ' + (avail !== null && avail <= 5 ? 'rb-pu' : 'rb-ok');
   setState('ok');
 }
+function showDup(name) { $('dup-name').textContent = name; setState('dup'); }
 
-function showDup(name) {
-  document.getElementById('dup-name').textContent = name;
-  setState('dup');
-}
-
-function showError(msg) {
-  document.getElementById('err-msg').textContent = msg;
-  setState('error');
-}
-
-function shake(id) {
-  const el = document.getElementById(id);
-  el.style.borderColor = 'var(--er)';
-  el.style.animation = 'none';
-  requestAnimationFrame(() => {
-    el.style.animation = 'shake 0.35s ease';
-    setTimeout(() => { el.style.borderColor = ''; el.style.animation = ''; }, 400);
-  });
-}
-
-/* ══ BOOT ══ */
 init();
 </script>
-<style>
-@keyframes shake {
-  0%,100%{transform:translateX(0)}
-  20%{transform:translateX(-6px)}
-  40%{transform:translateX(6px)}
-  60%{transform:translateX(-4px)}
-  80%{transform:translateX(4px)}
-}
-</style>
 </body>
 </html>
