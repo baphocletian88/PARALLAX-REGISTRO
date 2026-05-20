@@ -658,6 +658,35 @@ html, body {
 .fcard-body { pointer-events: none; }
 .card-btns, .card-btns * { pointer-events: all; }
 
+
+/* ── WALK-IN MODULE ─── */
+.wi-blk-btn {
+  display:flex;align-items:center;gap:12px;
+  padding:14px 16px;background:var(--bg2);
+  border:0.5px solid var(--b1);border-radius:var(--r-lg);
+  cursor:pointer;transition:all .15s;text-align:left;
+  font-family:var(--ff);
+}
+.wi-blk-btn:hover { border-color:rgba(255,255,255,.18);background:var(--bg3); }
+.wi-blk-btn.wi-active-2d { border-color:var(--a2d);background:rgba(99,102,241,.08); }
+.wi-blk-btn.wi-active-3d { border-color:var(--a3d);background:rgba(16,185,129,.08); }
+.wi-blk-dot { width:10px;height:10px;border-radius:50%;flex-shrink:0; }
+.wi-blk-name { font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px; }
+.wi-blk-sub  { font-size:11px;color:var(--t3); }
+.wi-entry {
+  display:grid;grid-template-columns:1fr auto;
+  gap:0 12px;padding:10px 16px;
+  border-bottom:0.5px solid var(--b2);align-items:start;
+}
+.wi-entry:last-child { border-bottom:none; }
+.wi-entry-name { font-size:13px;font-weight:500;color:var(--t1);margin-bottom:2px; }
+.wi-entry-meta { font-size:10px;color:var(--t3); }
+.wi-entry-blq  { font-size:9px;font-weight:600;letter-spacing:1px;padding:3px 8px;border-radius:var(--r-full); }
+.wi-blq-2d { background:var(--a2db);color:#818CF8;border:0.5px solid var(--a2dr); }
+.wi-blq-3d { background:var(--a3db);color:#34D399;border:0.5px solid var(--a3dr); }
+/* walkin tab accent */
+#tn-walkin.on { background:rgba(236,72,153,.12);border-color:rgba(236,72,153,.3);color:#F472B6; }
+
 </style>
 <style>
 /* QR Generator — scoped overrides */
@@ -730,6 +759,7 @@ html, body {
     <button class="tnav"     onclick="go('vip')"   id="tn-vip"><span class="tndot" style="background:var(--pu3)"></span>VIP</button>
     <button class="tnav"     onclick="go('log')"   id="tn-log">Registro</button>
     <button class="tnav"     onclick="go('qrgen')" id="tn-qrgen">⬡ QRs</button>
+    <button class="tnav"     onclick="go('walkin')" id="tn-walkin">+ Walk-in</button>
   </div>
 
   <!-- VIEWS -->
@@ -965,6 +995,92 @@ html, body {
 </div>
       </div>
     </div>
+
+    <!-- ▸ WALK-IN -->
+    <div class="view" id="v-walkin">
+      <div class="vbody">
+
+        <div class="blk-hdr">
+          <div class="blk-hdr-left">
+            <div class="blk-tag" style="background:rgba(236,72,153,.1);color:#F472B6;border:0.5px solid rgba(236,72,153,.3)">Registro Espontáneo</div>
+            <div class="blk-title" style="color:#F472B6">Walk-in Guests</div>
+            <div class="blk-sub">Invitados sin registro previo · Se suman al aforo del bloque seleccionado</div>
+          </div>
+          <div class="blk-hdr-right">
+            <div class="blk-cap" id="wi-cap-display">—</div>
+            <div class="blk-cap-l" id="wi-cap-label">Selecciona un bloque</div>
+          </div>
+        </div>
+
+        <!-- Block selector -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px">
+          <button class="wi-blk-btn" id="wi-btn-2d" onclick="wiSelectBlk('2D')">
+            <div class="wi-blk-dot" style="background:var(--a2d)"></div>
+            <div>
+              <div class="wi-blk-name">Bloque 2D</div>
+              <div class="wi-blk-sub" id="wi-sub-2d">— disponibles</div>
+            </div>
+          </button>
+          <button class="wi-blk-btn" id="wi-btn-3d" onclick="wiSelectBlk('3D')">
+            <div class="wi-blk-dot" style="background:var(--a3d)"></div>
+            <div>
+              <div class="wi-blk-name">Bloque 3D</div>
+              <div class="wi-blk-sub" id="wi-sub-3d">— disponibles</div>
+            </div>
+          </button>
+        </div>
+
+        <!-- Capacity bar (updates on block select) -->
+        <div id="wi-cap-bar-wrap" style="display:none;background:var(--bg2);border:0.5px solid var(--b1);border-radius:var(--r-lg);padding:14px 16px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:8px">
+            <span>Aforo del bloque</span>
+            <span id="wi-cap-pct"></span>
+          </div>
+          <div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-bottom:8px">
+            <div id="wi-cap-fill" style="height:100%;border-radius:3px;transition:width .4s"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px">
+            <span style="color:var(--t3)"><span id="wi-used">0</span> registrados</span>
+            <span id="wi-avail-txt" style="font-weight:600"></span>
+          </div>
+        </div>
+
+        <!-- Registration form -->
+        <div style="background:var(--bg2);border:0.5px solid var(--b1);border-radius:var(--r-lg);padding:18px;margin-bottom:16px">
+          <div style="font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:14px">Datos del invitado</div>
+
+          <div style="margin-bottom:12px">
+            <label class="blk-cap-l" style="display:block;margin-bottom:6px" for="wi-name">Nombre completo</label>
+            <input class="ci-sel" id="wi-name" type="text" autocomplete="name"
+              placeholder="Nombre del asistente" style="-webkit-appearance:none;background-image:none;padding:11px 14px;border-radius:var(--r-sm)">
+          </div>
+          <div style="margin-bottom:12px">
+            <label class="blk-cap-l" style="display:block;margin-bottom:6px" for="wi-email">Correo electrónico</label>
+            <input class="ci-sel" id="wi-email" type="email" autocomplete="email"
+              placeholder="correo@ejemplo.com" inputmode="email" style="-webkit-appearance:none;background-image:none;padding:11px 14px;border-radius:var(--r-sm)">
+          </div>
+          <div style="margin-bottom:16px">
+            <label class="blk-cap-l" style="display:block;margin-bottom:6px" for="wi-proc">¿De dónde nos visitas?</label>
+            <input class="ci-sel" id="wi-proc" type="text"
+              placeholder="Universidad, empresa, estudio…" style="-webkit-appearance:none;background-image:none;padding:11px 14px;border-radius:var(--r-sm)">
+          </div>
+
+          <button onclick="wiRegister()" id="wi-reg-btn"
+            style="width:100%;font-family:var(--ff);font-size:14px;font-weight:700;padding:14px;border-radius:var(--r-sm);background:rgba(236,72,153,.8);border:none;color:#fff;cursor:pointer;transition:opacity .15s,transform .1s;min-height:48px;touch-action:manipulation"
+            disabled>
+            Selecciona un bloque primero
+          </button>
+        </div>
+
+        <!-- Recent walk-in log -->
+        <div style="font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:10px">Registros de esta sesión</div>
+        <div id="wi-log" style="background:var(--bg2);border:0.5px solid var(--b1);border-radius:var(--r-lg);overflow:hidden">
+          <div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">Sin registros aún</div>
+        </div>
+
+      </div>
+    </div>
+
   </div><!-- /views -->
 
   <!-- FILM DETAIL MODAL -->
@@ -1055,7 +1171,7 @@ const VORGS = [
   {id:'pp', name:'Pixel Perfect',     type:'empresa', guests:[{id:'pp1',name:'Angel Hernandez',comp:0}]},
   {id:'mm', name:'MIMEC',             type:'empresa', guests:[{id:'mm1',name:'David Davila',comp:0},{id:'mm2',name:'Mariana Ortiz',comp:0}]},
   {id:'ar', name:'Armass Productions',type:'empresa', guests:[{id:'ar1',name:'Rubi Armass',comp:0}]},
-  {id:'in', name:'Invitados Independientes', type:'indie', guests:[{id:'in1',name:'Leo Marz',comp:2},{id:'in2',name:'Angel Corona',comp:0}]},
+  {id:'in', name:'Invitados Independientes', type:'indie', guests:[{id:'in1',name:'Leo Marz',comp:2},{id:'in2',name:'Angel Corona',comp:0},{id:'in4',name:'Alex Treviño',comp:1}]},
   {id:'en', name:'El Norte',          type:'media',   guests:[{id:'en1',name:'Elena Gaytan',comp:0}]},
   {id:'vm', name:'Vital Moves',       type:'empresa',
    guests:[{id:'vm1',name:'Fernanda Garcia',comp:0},{id:'vm2',name:'Cecillia Cardoso',comp:0}]}, /* FIXED: Cecillia */
@@ -1067,8 +1183,7 @@ const VORGS = [
     {id:'ud13',name:'Guillermo Lavin',comp:0},{id:'ud14',name:'Francisco González',comp:1},{id:'ud15',name:'Martin Garcia',comp:2},
     {id:'ud16',name:'Angel Martinez',comp:1},{id:'ud18',name:'Mariana Baidon',comp:0},
     {id:'ud19',name:'Osmar Garduño',comp:0},{id:'ud20',name:'Abril Garza',comp:0},{id:'ud21',name:'Maria Fernanda Esquivel',comp:0},
-    {id:'ud22',name:'Jair Salazar',comp:0},
-  ]},
+    {id:'ud22',name:'Jair Salazar',comp:0},{id:'in3',name:'Nohemi Gamboa',comp:0},{id:'in5',name:'Karla Moya',comp:1}]},
 ];
 const TLAB = {festival:'Festival',empresa:'Empresa',media:'Media',udem:'UDEM',indie:'Independiente'};
 const TCSS  = {festival:'tp-f',empresa:'tp-e',media:'tp-m',udem:'tp-u',indie:'tp-i'};
@@ -1467,7 +1582,7 @@ function go(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
   document.getElementById('v-' + id).classList.add('on');
   document.querySelectorAll('.tnav').forEach(t => t.classList.remove('on'));
-  const tnMap = {ov:'tn-ov','2d':'tn-2d','3d':'tn-3d',vip:'tn-vip',log:'tn-log',qrgen:'tn-qrgen'};
+  const tnMap = {ov:'tn-ov','2d':'tn-2d','3d':'tn-3d',vip:'tn-vip',log:'tn-log',qrgen:'tn-qrgen',walkin:'tn-walkin'};
   const tn = document.getElementById(tnMap[id]);
   if(tn) tn.classList.add('on');
 }
@@ -1595,6 +1710,178 @@ filmCard = function(f) {
   return html.replace('<div class="fcard', `<div class="fcard" onclick="if(!event.target.closest('.card-btns'))openModal('${f.id}')" `);
 };
 
+
+/* ══ WALK-IN MODULE ══════════════════════════════════════ */
+let wiBlk = '';     // '2D' or '3D'
+let wiLocalLog = []; // session log (in-memory)
+
+// Called every time SC changes — update walk-in capacity display
+function wiUpdateCap() {
+  const TOTAL = 406;
+  ['2D','3D'].forEach(b => {
+    const filmKey = b === '2D' ? 'walkin_2d' : 'walkin_3d';
+    // Count all screenings for this block + walk-ins
+    const films = b === '2D' ? F2 : F3;
+    const filmUsed = films.reduce((a,f) => a + fused(f.id), 0);
+    const wiUsed   = (SC[filmKey] || {used:0}).used || 0;
+    const totalUsed = filmUsed + wiUsed;
+    const avail = Math.max(0, TOTAL - totalUsed);
+    const el = document.getElementById('wi-sub-' + b.toLowerCase());
+    if(el) el.textContent = `${avail} disponibles`;
+  });
+
+  // Update selected block bar
+  if(wiBlk) {
+    const b = wiBlk;
+    const films = b === '2D' ? F2 : F3;
+    const filmUsed = films.reduce((a,f) => a + fused(f.id), 0);
+    const wiKey = b === '2D' ? 'walkin_2d' : 'walkin_3d';
+    const wiUsed = (SC[wiKey] || {used:0}).used || 0;
+    const totalUsed = filmUsed + wiUsed;
+    const avail = Math.max(0, 406 - totalUsed);
+    const pct = Math.round(totalUsed / 406 * 100);
+    const s = avail === 0 ? 'er' : avail <= 60 ? 'wn' : 'ok';
+    const ac = s==='ok'?'var(--ok)':s==='wn'?'var(--wn)':'var(--er)';
+
+    const capDisplay = document.getElementById('wi-cap-display');
+    const capLabel   = document.getElementById('wi-cap-label');
+    const fill       = document.getElementById('wi-cap-fill');
+    const pctEl      = document.getElementById('wi-cap-pct');
+    const usedEl     = document.getElementById('wi-used');
+    const availTxt   = document.getElementById('wi-avail-txt');
+    const wrap       = document.getElementById('wi-cap-bar-wrap');
+
+    if(capDisplay) capDisplay.textContent = `${avail} / 406`;
+    if(capLabel)   capLabel.textContent   = `Disponibles · Bloque ${b}`;
+    if(fill)       { fill.style.width = pct+'%'; fill.style.background = ac; }
+    if(pctEl)      pctEl.textContent = pct + '% ocupado';
+    if(usedEl)     usedEl.textContent = totalUsed;
+    if(availTxt)   { availTxt.textContent = avail + ' disponibles'; availTxt.style.color = ac; }
+    if(wrap)       wrap.style.display = 'block';
+
+    // Update register button
+    const btn = document.getElementById('wi-reg-btn');
+    if(btn) {
+      if(avail <= 0) {
+        btn.disabled = true;
+        btn.textContent = 'Bloque lleno — sin lugares disponibles';
+        btn.style.opacity = '0.4';
+      } else {
+        btn.disabled = false;
+        btn.textContent = `Registrar en Bloque ${b}`;
+        btn.style.opacity = '1';
+      }
+    }
+  }
+}
+
+function wiSelectBlk(blk) {
+  wiBlk = blk;
+  // Visual state on buttons
+  document.getElementById('wi-btn-2d').className = 'wi-blk-btn' + (blk==='2D' ? ' wi-active-2d' : '');
+  document.getElementById('wi-btn-3d').className = 'wi-blk-btn' + (blk==='3D' ? ' wi-active-3d' : '');
+  wiUpdateCap();
+}
+
+async function wiRegister() {
+  const name  = document.getElementById('wi-name').value.trim();
+  const email = document.getElementById('wi-email').value.trim();
+  const proc  = document.getElementById('wi-proc').value.trim();
+
+  if(!wiBlk) { toast('Selecciona un bloque primero', 'e'); return; }
+  if(!name)  { wiShake('wi-name');  return; }
+  if(!email || !email.includes('@')) { wiShake('wi-email'); return; }
+  if(!proc)  { wiShake('wi-proc');  return; }
+
+  const btn = document.getElementById('wi-reg-btn');
+  btn.disabled = true; btn.textContent = 'Registrando…';
+
+  const films = wiBlk === '2D' ? F2 : F3;
+  const filmUsed = films.reduce((a,f) => a + fused(f.id), 0);
+  const wiKey = wiBlk === '2D' ? 'walkin_2d' : 'walkin_3d';
+  const wiUsed = (SC[wiKey] || {used:0}).used || 0;
+  const avail = Math.max(0, 406 - filmUsed - wiUsed);
+
+  if(avail <= 0) { toast('Bloque lleno — sin lugares', 'e'); wiUpdateCap(); return; }
+
+  const timeStr = now(), ts = new Date().toISOString();
+  const entry = { name, email, procedencia:proc, bloque:wiBlk, timeStr, ts, type:'walkin' };
+
+  try {
+    if(!isDemo && db) {
+      // Increment walk-in counter for this block
+      await db.ref('screenings/' + wiKey).transaction(cur => {
+        const d = cur || {used:0};
+        if((d.used||0) + filmUsed >= 406) return; // abort if full
+        d.used = (d.used||0) + 1;
+        return d;
+      });
+      // Save attendee record
+      await db.ref('walkin_attendees/' + wiBlk.toLowerCase()).push(entry);
+      // Log it
+      await db.ref('eventlog').push({ time:timeStr, title:'Walk-in · Bloque '+wiBlk, bloque:wiBlk, qty:1, name, email, procedencia:proc });
+    } else {
+      // Demo mode
+      if(!SC[wiKey]) SC[wiKey] = {used:0};
+      SC[wiKey].used = (SC[wiKey].used||0) + 1;
+    }
+
+    // Add to session log
+    wiLocalLog.unshift({ name, email, proc, bloque:wiBlk, timeStr });
+    wiRenderLog();
+    wiUpdateCap();
+
+    // Clear form
+    document.getElementById('wi-name').value  = '';
+    document.getElementById('wi-email').value = '';
+    document.getElementById('wi-proc').value  = '';
+
+    toast(`✓ ${name} registrado · Bloque ${wiBlk}`);
+
+  } catch(e) {
+    console.error('Walk-in error:', e);
+    toast('Error al registrar. Intenta de nuevo.', 'e');
+  } finally {
+    wiUpdateCap(); // re-enables button with correct state
+  }
+}
+
+function wiRenderLog() {
+  const el = document.getElementById('wi-log');
+  if(!el) return;
+  if(!wiLocalLog.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">Sin registros aún</div>';
+    return;
+  }
+  el.innerHTML = wiLocalLog.map(e => `
+    <div class="wi-entry">
+      <div>
+        <div class="wi-entry-name">${e.name}</div>
+        <div class="wi-entry-meta">${e.proc} · ${e.timeStr}</div>
+      </div>
+      <span class="wi-entry-blq wi-blq-${e.bloque.toLowerCase()}">${e.bloque}</span>
+    </div>
+  `).join('');
+}
+
+function wiShake(id) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.style.borderColor = 'var(--er)';
+  el.style.animation = 'none';
+  requestAnimationFrame(() => {
+    el.style.animation = 'shake .35s ease';
+    setTimeout(() => { el.style.borderColor = ''; el.style.animation = ''; }, 400);
+  });
+}
+
+// Hook into rAll so walk-in cap updates whenever Firebase pushes changes
+const _origRAll = rAll;
+rAll = function() {
+  _origRAll();
+  wiUpdateCap();
+};
+
 /* ══ BOOT ════════════════════════════════════════════ */
 init();
 
@@ -1680,6 +1967,8 @@ const VIP = [
   {id:'ud15c2',name:'Acompañante 2 · Martin Garcia',org:'UDEM'},
   {id:'in1c1', name:'Acompañante 1 · Leo Marz',org:'Independiente'},
   {id:'in1c2', name:'Acompañante 2 · Leo Marz',org:'Independiente'},
+  {id:'in4c1',name:'Acompañante 1 · Alex Treviño',org:'Independiente'},
+  {id:'in5c1',name:'Acompañante 1 · Karla Moya',  org:'UDEM'},
   {id:'kw1c1', name:'Acompañante 1 · Alejandra Meza',org:'Keywords Studio'},
 ];
 
