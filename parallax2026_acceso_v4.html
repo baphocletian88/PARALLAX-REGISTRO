@@ -729,6 +729,8 @@ html, body {
 #v-qrgen .inst-step{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start}
 #v-qrgen .inst-n{width:22px;height:22px;border-radius:50%;flex-shrink:0;background:var(--pub);border:0.5px solid var(--pur);color:var(--pu3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
 #v-qrgen .inst-txt{font-size:12px;color:var(--t2);line-height:1.5}
+.cb-rst { background:rgba(245,158,11,.08); border-color:rgba(245,158,11,.2); color:var(--wn); }
+.cb-rst:active { background:rgba(245,158,11,.18); }
 /* QR tab gold accent */
 .tnav#tn-qrgen.on{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.3);color:var(--gold)}
 </style>
@@ -1385,6 +1387,7 @@ function filmCard(f) {
           ? `<button class="cbtn ${s==='none'?'cb-no':'cb-er'}" disabled>${s==='none'?'Sin asistentes':'Lleno'}</button>`
           : `<button class="cbtn cb-reg" onclick="regFilm('${f.id}',1)">+ Registrar</button>`}
         <button class="cbtn cb-un" onclick="undoFilm('${f.id}')">↩</button>
+        <button class="cbtn cb-rst" onclick="resetFilm(\'${f.id}\')" title="Resetear a 0">⟳</button>
       </div>
     </div>
   </div>`;
@@ -1534,7 +1537,8 @@ function rVIP() {
           <div class="${s.in?'gtime':'gmeta'}">${s.in?(s.time||'Ingresó'):'Pendiente de ingreso'}</div>
         </div>
         <button class="chk-btn ${s.in?'chk-in':'chk-out'}" onclick="togVip('${g.id}')">${s.in?'✓ Ingresó':'Registrar'}</button>
-      </div>` +
+        ${s.in ? \`<button class="chk-btn" style="font-size:9px;padding:5px 7px;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.25);color:var(--wn)" onclick="resetVip('${g.id}','${g.name}')" title="Liberar acceso">⟳</button>\` : ''}
+      </div>\` +
       Array.from({length:g.comp},(_,ci) => {
         const cs = (s.comp||[])[ci] || {in:false};
         const compLast = ci===g.comp-1 && gi===gs.length-1;
@@ -1881,6 +1885,51 @@ rAll = function() {
   _origRAll();
   wiUpdateCap();
 };
+
+
+/* ══ RESET FUNCTIONS (for test cleanup) ═══════════════════ */
+async function resetFilm(id) {
+  const f = FILMS.find(x => x.id === id); if(!f) return;
+  if(!confirm('¿Resetear aforo de "' + f.t + '" a 0?\n\nEsto borrará el contador y el dedup para que el QR pueda usarse nuevamente.')) return;
+  try {
+    if(!isDemo && db) {
+      await Promise.all([
+        db.ref('screenings/' + id).set({used: 0}),
+        db.ref('attendees_dedup/' + id).remove(),
+      ]);
+      // Also log it
+      await db.ref('eventlog').push({
+        time: now(), title: f.t, bloque: f.b, qty: 0,
+        name: '[RESET]', email: '', procedencia: 'Reset manual por operador'
+      });
+    } else {
+      SC[id] = {used: 0};
+      rAll();
+    }
+    toast('✓ Aforo de "' + f.t + '" reseteado a 0');
+  } catch(e) {
+    console.error('Reset error:', e);
+    toast('Error al resetear: ' + e.message, 'e');
+  }
+}
+
+async function resetVip(gid, name) {
+  if(!confirm('¿Liberar acceso de ' + name + '?\n\nEl QR podrá usarse nuevamente.')) return;
+  try {
+    if(!isDemo && db) {
+      await Promise.all([
+        db.ref('vip_checkins/' + gid).remove(),
+        db.ref('vip/' + gid).update({in: false, time: null}),
+      ]);
+    } else {
+      if(VS[gid]) { VS[gid].in = false; VS[gid].time = null; }
+      rVIP();
+    }
+    toast('✓ Acceso de ' + name + ' liberado');
+  } catch(e) {
+    toast('Error: ' + e.message, 'e');
+  }
+}
 
 /* ══ BOOT ════════════════════════════════════════════ */
 init();
