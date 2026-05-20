@@ -332,18 +332,19 @@ function init() {
       }, () => { /* ignore listener errors */ });
 
     } else {
-      /* VIP: check existing registration */
+      /* VIP: realtime listener — reflects deletions immediately */
       setLoader('Cargando perfil VIP…');
-      db.ref('vip_checkins/'+TARGET).once('value').then(snap => {
-        fbDone = true; clearTimeout(timeout);
-        if(snap.val() && snap.val().checkedIn) {
-          showDup(snap.val().name || vipData.name);
+      db.ref('vip_checkins/'+TARGET).on('value', snap => {
+        if(!fbDone) { fbDone = true; clearTimeout(timeout); }
+        const data = snap.val();
+        if(data && data.checkedIn) {
+          showDup(data.name || vipData.name);
         } else {
+          /* Not registered or was deleted — show form */
           setupVipForm();
         }
-      }).catch(() => {
-        /* ✅ FIX 2: If Firebase check fails, show form anyway */
-        fbDone = true; clearTimeout(timeout);
+      }, () => {
+        if(!fbDone) { fbDone = true; clearTimeout(timeout); }
         setupVipForm();
       });
     }
@@ -406,7 +407,8 @@ function updateCapUI() {
   const btn = $('confirm-btn');
   if(avail <= 0) {
     btn.disabled = true; btn.className = 'confirm-btn full'; btn.textContent = 'Aforo completo';
-  } else if(!btn.disabled) {
+  } else {
+    btn.disabled = false;
     btn.className = 'confirm-btn'; btn.textContent = 'Confirmar mi asistencia';
   }
 }
@@ -418,70 +420,155 @@ async function doConfirm() {
   if(!name)  { shake('inp-name'); return; }
   if(!email || !email.includes('@') || !email.includes('.')) { shake('inp-email'); return; }
   const procEl = $('inp-proc');
-  if(procEl && procEl.style.display !== 'none' && !procEl.value.trim()) { shake('inp-proc'); return; }
+  // Only require procedencia for film mode (VIP panel hides it via parent div)
+  if(MODE !== 'vip' && procEl && !procEl.value.trim()) { shake('inp-proc'); return; }
 
   const btn = $('confirm-btn');
   btn.disabled = true; btn.textContent = 'Verificando…';
+  /* Safety: always re-enable after 15s regardless of what happens */
+  const safetyTimer = setTimeout(() => {
+    const b = $('confirm-btn');
+    if(b && b.disabled) {
+      b.disabled = false; b.style.opacity = '1';
+      b.textContent = 'Confirmar mi asistencia';
+    }
+  }, 15000);
   const timeStr = now(), ts = new Date().toISOString();
 
   try {
+    /* ── VIP FLOW ── */
     if(MODE === 'vip') {
       if(db) {
-        const snap = await db.ref('vip_checkins/'+TARGET).once('value');
-        if(snap.val()?.checkedIn) { showDup(snap.val().name||vipData.name); return; }
+        btn.textContent = 'Verificando…';
+        let existing = null;
+        try { existing = (await db.ref('vip_checkins/'+TARGET).once('value')).val(); }
+        catch(readErr) {
+          /* Rules may block read — proceed anyway, worst case duplicate */
+          console.warn('VIP read check skipped:', readErr.code);
+        }
+        if(existing && existing.checkedIn) { showDup(existing.name||vipData.name); return; }
+
         btn.textContent = 'Registrando…';
         const vipProc = $('inp-proc')?.value?.trim() || '';
-        await db.ref('vip_checkins/'+TARGET).set({
-          checkedIn:true, name:vipData.name, email, procedencia:vipProc, org:vipData.org, timeStr, ts, guestId:TARGET
-        });
-        const cur = (await db.ref('vip/'+TARGET).once('value')).val()||{};
-        await db.ref('vip/'+TARGET).set({...cur, in:true, time:timeStr});
+        try {
+          await db.ref('vip_checkins/'+TARGET).set({
+            checkedIn:true, name:vipData.name, email,
+            procedencia:vipProc, org:vipData.org, timeStr, ts, guestId:TARGET
+          });
+        } catch(writeErr) {
+          throw new Error('Firebase write failed (' + writeErr.code + '). Verifica las reglas de la base de datos.');
+        }
+        /* Update VIP dashboard state */
+        try {
+          const cur = (await db.ref('vip/'+TARGET).once('value')).val()||{};
+          await db.ref('vip/'+TARGET).set({...cur, in:true, time:timeStr});
+        } catch(e2) { console.warn('VIP dashboard state update failed:', e2.code); }
       }
+      /* Always show success — even in demo/offline mode */
+      clearTimeout(safetyTimer);
       showSuccess(vipData.name, 'Invitado Especial · Parallax 2026', null);
 
+    /* ── FILM FLOW ── */
     } else {
+      /* Safety: currentCap must be > 0 */
+      if(!currentCap || currentCap <= 0) {
+        showError('Este cortometraje no tiene asistentes registrados.');
+        return;
+      }
+
+      /* Get latest count from Firebase */
       let latestUsed = currentUsed;
       if(db) {
-        const s = await db.ref('screenings/'+TARGET).once('value');
-        latestUsed = (s.val()||{used:0}).used||0;
+        try {
+          const s = await db.ref('screenings/'+TARGET).once('value');
+          latestUsed = (s.val()||{used:0}).used || 0;
+        } catch(readErr) {
+          console.warn('Could not read latest count, using local:', readErr.code);
+        }
       }
+
       const avail = Math.max(0, currentCap - latestUsed);
-      if(avail <= 0) { setState('full'); return; }
+      if(avail <= 0) { clearTimeout(safetyTimer); setState('full'); return; }
+
       btn.textContent = 'Registrando…';
+
       if(db) {
+        /* Dedup check */
         const eKey = email.toLowerCase().replace(/[^a-z0-9]/g,'_').substring(0,80);
         const dedupRef = db.ref('attendees_dedup/'+TARGET+'/'+eKey);
-        const dd = await dedupRef.once('value');
-        if(dd.val()) { showSuccess(dd.val().name||name, filmData.t, avail); return; }
-        let finalUsed = latestUsed;
-        const tx = await db.ref('screenings/'+TARGET).transaction(cur => {
-          const d = cur||{used:0};
-          if((d.used||0) >= currentCap) return;
-          finalUsed = (d.used||0)+1;
-          return {used:finalUsed};
-        });
-        if(!tx.committed) { setState('full'); return; }
+        try {
+          const dd = await dedupRef.once('value');
+          /* Only block if dedup exists AND counter is still > 0 (not a manual reset) */
+          if(dd.val() && latestUsed > 0) {
+            clearTimeout(safetyTimer);
+            showSuccess(dd.val().name||name, filmData.t, avail);
+            return;
+          }
+          /* Counter was reset to 0 — clean stale dedup so re-registration works */
+          if(dd.val() && latestUsed === 0) {
+            dedupRef.remove().catch(()=>{});
+          }
+        } catch(ddErr) { console.warn('Dedup check skipped:', ddErr.code); }
+
+        /* Safe increment via transaction */
+        let finalUsed = latestUsed + 1;
+        try {
+          const tx = await db.ref('screenings/'+TARGET).transaction(cur => {
+            const d = cur || {used:0};
+            const u = d.used || 0;
+            if(u >= currentCap) return undefined; /* abort — full */
+            finalUsed = u + 1;
+            return {used: finalUsed};
+          });
+          clearTimeout(safetyTimer);
+          if(!tx.committed) {
+            /* Transaction aborted — either full or Firebase rules issue */
+            const snap = await db.ref('screenings/'+TARGET).once('value').catch(()=>null);
+            const realUsed = snap ? (snap.val()||{used:0}).used||0 : latestUsed;
+            if(realUsed >= currentCap) { setState('full'); return; }
+            /* Rules issue — fall through to direct write */
+            throw new Error('Transaction not committed. Check Firebase rules.');
+          }
+        } catch(txErr) {
+          throw new Error('Error al incrementar contador: ' + txErr.message);
+        }
+
+        /* Save records — non-blocking if one fails */
         const proc = $('inp-proc')?.value?.trim() || '';
         const entry = {name,email,procedencia:proc,ts,timeStr,filmId:TARGET,bloque:filmData.b,filmTitle:filmData.t};
-        await Promise.all([
-          db.ref('attendees/'+TARGET).push(entry),
-          dedupRef.set(entry),
-          db.ref('eventlog').push({time:timeStr,title:filmData.t,bloque:filmData.b,qty:1,name,email,procedencia:proc||''})
-        ]);
-        showSuccess(name, filmData.t, Math.max(0, currentCap-finalUsed));
+        const saves = [
+          db.ref('attendees/'+TARGET).push(entry).catch(e=>console.warn('attendees write:',e)),
+          dedupRef.set(entry).catch(e=>console.warn('dedup write:',e)),
+          db.ref('eventlog').push({time:timeStr,title:filmData.t,bloque:filmData.b,qty:1,name,email,procedencia:proc||''}).catch(e=>console.warn('log write:',e))
+        ];
+        await Promise.allSettled(saves);
+        clearTimeout(safetyTimer);
+        showSuccess(name, filmData.t, Math.max(0, currentCap - finalUsed));
+
       } else {
-        currentUsed = Math.min(currentCap, currentUsed+1);
+        /* Demo / offline mode */
+        currentUsed = Math.min(currentCap, currentUsed + 1);
         updateCapUI();
-        showSuccess(name, filmData.t, Math.max(0, currentCap-currentUsed));
+        showSuccess(name, filmData.t, Math.max(0, currentCap - currentUsed));
       }
     }
+
   } catch(e) {
-    console.error(e);
-    btn.disabled = false; btn.textContent = 'Confirmar mi asistencia';
+    console.error('doConfirm error:', e);
+    clearTimeout(safetyTimer);
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.textContent = 'Confirmar mi asistencia';
+    /* Show real error message to operator */
     const al = $('c-alert');
-    al.className = 'alert-box alert-er'; al.textContent = 'Error de conexión. Intenta de nuevo.';
+    const msg = e.message || 'Error desconocido';
+    const isRules = msg.includes('permission') || msg.includes('PERMISSION') || msg.includes('rules') || msg.includes('denied');
+    al.className = 'alert-box alert-er';
+    al.textContent = isRules
+      ? 'Error de permisos Firebase. Ve a Firebase Console → Realtime Database → Reglas y verifica que .read y .write estén en "true".'
+      : 'Error: ' + msg + '. Intenta de nuevo.';
     al.style.display = 'flex';
-    setTimeout(()=>al.style.display='none', 4000);
+    setTimeout(() => al.style.display = 'none', 8000);
   }
 }
 
