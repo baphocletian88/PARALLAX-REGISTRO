@@ -653,6 +653,12 @@ html, body {
 .modal-footer-qty-lbl { font-size: 11px; font-weight: 500; color: var(--t2); flex: 1; }
 .no-alumnos { font-size: 12px; color: var(--t3); padding: 16px 0; text-align: center; }
 
+.m-crew-item { display:flex; align-items:center; gap:8px; min-width:0; }
+.m-crew-avatar { width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink:0; background:var(--bg3); }
+.m-crew-avatar-placeholder { width:36px; height:36px; border-radius:50%; background:var(--pub); color:var(--pu3); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; border:0.5px solid var(--pur); }
+.m-crew-name { font-size:12px; font-weight:600; color:var(--t1); }
+.m-crew-role { font-size:10px; color:var(--t3); letter-spacing:.5px; }
+
 /* Make cards clickable for detail */
 .fcard { cursor: pointer; }
 .fcard-body { pointer-events: none; }
@@ -1088,6 +1094,10 @@ html, body {
   <!-- FILM DETAIL MODAL -->
   <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
     <div class="modal" id="modal">
+      <!-- Film poster banner -->
+      <div id="m-poster-wrap" style="width:100%;max-height:160px;overflow:hidden;flex-shrink:0;background:var(--bg3)">
+        <img id="m-poster" src="" alt="" loading="lazy" style="width:100%;height:160px;object-fit:cover;display:none;transition:opacity .3s" onload="this.style.opacity=1">
+      </div>
       <div class="modal-header">
         <div class="modal-header-left">
           <div class="modal-blq-tag" id="m-blq-tag"></div>
@@ -1098,7 +1108,11 @@ html, body {
       </div>
       <div class="modal-cap-strip" id="m-cap-strip"></div>
       <div class="modal-body">
-        <div class="modal-section">
+        <!-- Synopsis -->
+      <p id="m-synopsis" style="font-size:13px;color:var(--t2);line-height:1.6;padding:14px 20px 0;display:none"></p>
+      <!-- Crew photos -->
+      <div id="m-crew" style="display:none;gap:12px;flex-wrap:wrap;padding:14px 20px 0;flex-shrink:0"></div>
+      <div class="modal-section">
           <div class="modal-section-head">
             <span>Alumnos participantes</span>
             <span class="modal-count" id="m-alu-count"></span>
@@ -1143,23 +1157,179 @@ const TEATRO_CAP = 406;  // Capacidad total Teatro UDEM
 /* ══ DATA — FILMS ════════════════════════════════════ */
 const FILMS = [
   {id:'afterlight', b:'2D', t:'Afterlight',
-   a:['Lorena Santos M.','Carmen Mora C.','Carol Treviño H.','Luana Montaña M.','María F. Márquez','Ana Ibarra','Daniela Meléndez','Vanessa Cárdenas','Gabriela Reyna','Sofía Vázquez','Lorena Yañez','Ximena Gómez','María Echeagaray','Ian Aguilar','Alonso de León'], inv:58},
-  {id:'battle',     b:'2D', t:'Battle of the Batter',    a:['Xenia Muñiz','Natalia Ríos','Nadia Espinosa','Michelle Díaz','Caleb Martínez'], inv:35},
-  {id:'beatbox',    b:'2D', t:'Beatbox',                 a:['Isaac Arredondo','Carla Gil','Jesús Soto','Raúl Torres','Javier de la Garza','Isaac Boone'], inv:30},
-  {id:'flama',      b:'2D', t:'Flama',                   a:['Ángel Martínez B.','Valeria Rodríguez','Ana Llano','Guillermo Enríquez','Miranda García'], inv:31},
-  {id:'freshtzu',   b:'2D', t:'Freshtzu',                a:['Maryanna Márquez','Valentina Deandar','Alan Caballero','Annayram Márquez'], inv:21},
-  {id:'malita',     b:'2D', t:"Malita Pa' Ti",           a:['Emilia Galván','Mia Medrano','Zaira Garduño','Gael Domínguez','Constanza Medrano','Leslie Guevara'], inv:32},
-  {id:'otterside',  b:'2D', t:'Otterside',               a:['Raul Maldonado','Emiliano Martínez','Luis Lozano','Oswaldo Silvas','Samantha Cantú','Jorge Gómez','Carlos Suárez'], inv:37},
-  {id:'ronnie',     b:'2D', t:'Ronnie en la Luna',       a:['Alessa Romo','Andrés Rosiles','Victoria Peña','Valeria Zertuche','Carlos Serroque','Juan Martínez','Daniel García'], inv:29},
-  {id:'blockhead',  b:'3D', t:'Blockhead',               a:['Fernando Cárdenas Segura'], inv:5},
-  {id:'contact',    b:'3D', t:'Contact',                 a:['Gonzalo Ramos Ochoa'], inv:5},
-  {id:'escamas',    b:'3D', t:'Escamas',
-   a:['Julieta Hernández','Jessica Córdova','Sofía Téllez','Andrea Zamarripa','Andrea Ortegón','Raul Carrillo','Jorge Urencio'], inv:50},
-  {id:'ineedspace', b:'3D', t:'I Need Some Space',       a:['Angela Aguirre','Mariana Córdova','Luisa Treviño','Serydia Cortez'], inv:18},
-  {id:'lonestar',   b:'3D', t:'Lone Star Store',         a:['Carlos García H.','María Casillas','Elizabeth Aguirre'], inv:13},
-  {id:'recuerda',   b:'3D', t:'Recuerda que te amo',     a:['Isabella Puente','Emma Saucedo','Lesly Gómez','Ana Velázquez','Carlos Cantú'], inv:31},
-  {id:'rex',        b:'3D', t:'Rex',                     a:['Ángel Torres','Emilio García','Mariano Mosqueda'], inv:14},
-  {id:'ungiro',     b:'3D', t:'Un giro en el agua',      a:[], inv:0},
+   duration:'10 min',
+   synopsis:'Tras su muerte, el \"Abuelo\" debe enfrentarse a los recuerdos de su vida para poder seguir adelante en un proceso burocrático para salir del purgatorio — volviendo a experimentar la complicada relación que compartía con su hija.',
+   poster:'./PARALLAX — International Animation Festival_files/afterlight.jpg',
+   a:['Lorena Santos Morales','Carmen Victoria Mora Cova','Carol Treviño Henric','Luana Montaña Martínez','María F. Márquez Oyervides','Ana Sofía Ibarra','Daniela Meléndez Garcia','Vanessa Cárdenas Torres','Gabriela Reyna Navar','Sofía Vázquez Vigil','Lorena Yañez Lara','Ximena Gómez Orta','Maria Echeagaray Garcia','Ian Aguilar Rodríguez','Alonso de León Margain'],
+   crew:[
+    {name:'Lorena Santos Morales', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/lorena-santos-morales.jpg'},
+    {name:'Victoria Alcalá Garza', role:'Producción', avatar:''}
+   ],
+   inv:58},
+  {id:'battle', b:'2D', t:'Battle of the Batter',
+   duration:'7 min',
+   synopsis:'Dos hermanas compiten por hacer el cupcake perfecto, pero su hermano menor convierte el reto en un caos dulce para evitar elegir a una ganadora.',
+   poster:'./PARALLAX — International Animation Festival_files/battle-of-the-batter.jpg',
+   a:['Michelle Aseret Díaz Sánchez', 'Natalia Sofía Ríos Garza', 'Xenia Fernanda Muñiz Siller', 'Caleb Ilan Martínez Ardila', 'Nadia Victoria Espinosa Tenorio'],
+   crew:[
+    {name:'Michelle Aseret Díaz Sánchez', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/michelle-aseret-diaz-sanchez.jpg'},
+    {name:'Natalia Sofía Ríos Garza', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/natalia-sofia-rios-garza.jpg'},
+    {name:'Xenia Fernanda Muñiz Siller', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/xenia-fernanda-muniz-siller.jpg'},
+    {name:'Caleb Ilan Martínez Ardila', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/caleb-ilan-martinez-ardila.jpg'},
+    {name:'Nadia Victoria Espinosa Tenorio', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/nadia-victoria-espinosa-tenorio.jpg'}
+   ],
+   inv:35},
+  {id:'beatbox', b:'2D', t:'Beat Box King',
+   duration:'6 min',
+   synopsis:'Tape es un joven boxeador que debe ganar una pelea imposible para conseguir el título de campeón y la aprobación de su estricto coach. ¿Será capaz de encontrar su propio ritmo y demostrar quién es el rey?',
+   poster:'./PARALLAX — International Animation Festival_files/beat-box-king.jpg',
+   a:['Javier De la Garza Treviño', 'Jesús Maximiliano Soto Gamboa', 'Carla Roberta Gil Tinoco', 'Isaac Boone Patlán', 'Isaac Alejandro Arredondo Neri', 'Raúl Torres Camarillo'],
+   crew:[
+    {name:'Javier De la Garza Treviño', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/javier-de-la-garza-trevino.jpg'},
+    {name:'Jesús Maximiliano Soto Gamboa', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/jesus-maximiliano-soto-gamboa.jpg'},
+    {name:'Carla Roberta Gil Tinoco', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/carla-roberta-gil-tinoco.jpg'},
+    {name:'Isaac Boone Patlán', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/isaac-boone-patlan.jpg'},
+    {name:'Isaac Alejandro Arredondo Neri', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/isaac-alejandro-arredondo-neri.jpg'},
+    {name:'Raúl Torres Camarillo', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/raul-torres-camarillo.jpg'}
+   ],
+   inv:30},
+  {id:'flama', b:'2D', t:'Flama',
+   duration:'6 min',
+   synopsis:'Un hombre que ha dejado que sus sueños se apaguen por culpa de sus decisiones decide dar un giro de 180 grados a su vida y cumplir lo que siempre ha anhelado, antes de que su llama se apague para siempre.',
+   poster:'./PARALLAX — International Animation Festival_files/flama.jpg',
+   a:['Ana Fernanda Llano Muñoz', 'Miranda García Rodríguez', 'Guillermo Enriquez Ibave', 'Ángel Emilio Martínez Bedia', 'Valeria Rodríguez'],
+   crew:[
+    {name:'Ana Fernanda Llano Muñoz', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/ana-fernanda-llano-munoz.jpg'},
+    {name:'Miranda García Rodríguez', role:'Diseño de Personajes', avatar:'./PARALLAX — International Animation Festival_files/miranda-garcia-rodriguez.jpg'},
+    {name:'Guillermo Enriquez Ibave', role:'Postproducción', avatar:'./PARALLAX — International Animation Festival_files/guillermo-enriquez-ibave.jpg'},
+    {name:'Ángel Emilio Martínez Bedia', role:'Subdirección', avatar:'./PARALLAX — International Animation Festival_files/angel-emilio-martinez-bedia.jpg'},
+    {name:'Valeria Rodríguez', role:'Dirección de Arte', avatar:'./PARALLAX — International Animation Festival_files/valeria-rodriguez.jpg'}
+   ],
+   inv:31},
+  {id:'freshtzu', b:'2D', t:'Freshtzu',
+   duration:'5 min',
+   synopsis:'Cuando un oso solitario pierde la esperanza en las personas, debe enfrentarse a su egoísmo mediante sus luchas internas — porque si no, podrá perder a lo único que amaba.',
+   poster:'./PARALLAX — International Animation Festival_files/freshtzu.jpg',
+   a:['Annayram Márquez García', 'Maryanna Márquez García', 'Valentina Deandar Tamez', 'Alan Gabriel Caballero Lozano'],
+   crew:[
+    {name:'Annayram Márquez García', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/annayram-marquez-garcia.jpg'},
+    {name:'Maryanna Márquez García', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/maryanna-marquez-garcia.jpg'},
+    {name:'Valentina Deandar Tamez', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/valentina-deandar-tamez.jpg'},
+    {name:'Alan Gabriel Caballero Lozano', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/alan-gabriel-caballero-lozano.jpg'}
+   ],
+   inv:21},
+  {id:'malita', b:'2D', t:'Malita Pa ti',
+   duration:'12 min',
+   synopsis:'Cuando la ciudad pierde a su heroína en un secuestro, la villana debe rescatar a su mayor rival — porque si no, perderá al amor de su vida.',
+   poster:'./PARALLAX — International Animation Festival_files/malitapati.jpg',
+   a:['Emilia Galván López', 'Gael Antonio Domínguez Huerta', 'Zaira Fátima Garduño Herrera', 'Leslie Yazmín Guevara Tolentino', 'Constanza Abril Medrano Cruz'],
+   crew:[
+    {name:'Emilia Galván López', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/emilia-galvan-lopez.jpg'},
+    {name:'Gael Antonio Domínguez Huerta', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/gael-antonio-dominguez-huerta.jpg'},
+    {name:'Zaira Fátima Garduño Herrera', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/zaira-fatima-garduno-herrera.jpg'},
+    {name:'Leslie Yazmín Guevara Tolentino', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/leslie-yazmin-guevara-tolentino.jpg'},
+    {name:'Constanza Abril Medrano Cruz', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/constanza-abril-medrano-cruz.jpg'}
+   ],
+   inv:32},
+  {id:'otterside', b:'2D', t:'Otter Side',
+   duration:'7 min',
+   synopsis:'Cuando una nutria apática no escucha advertencias, las circunstancias la van a orillar a aprender a ver la vida con la imagen completa.',
+   poster:'./PARALLAX — International Animation Festival_files/otterside.jpg',
+   a:['Oswaldo Andrés Silvas Alcaraz', 'Samantha Cantú Morales', 'Carlos Andrés Suárez Delgado', 'Rafael Savani Alcantar Palmer', 'Luis Fernando Lozano Cantú', 'Raúl Maldonado Villarreal', 'Jorge Gómez Sánchez'],
+   crew:[
+    {name:'Oswaldo Andrés Silvas Alcaraz', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/oswaldo-andres-silvas-alcaraz.jpg'},
+    {name:'Samantha Cantú Morales', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/samantha-cantu-morales.jpg'},
+    {name:'Carlos Andrés Suárez Delgado', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/carlos-andres-suarez-delgado.jpg'},
+    {name:'Rafael Savani Alcantar Palmer', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/rafael-savani-alcantar-palmer.jpg'},
+    {name:'Luis Fernando Lozano Cantú', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/luis-fernando-lozano-cantu.jpg'},
+    {name:'Raúl Maldonado Villarreal', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/raul-maldonado-villarreal.jpg'},
+    {name:'Jorge Gómez Sánchez', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/jorge-gomez-sanchez.jpg'}
+   ],
+   inv:37},
+  {id:'ronnie', b:'2D', t:'Ronnie en la luna',
+   duration:'10 min',
+   synopsis:'En un mundo crudo, Ronnie, un conejo salvado por un niño que se volvió su dueño, ahora tiene que proteger y salvar a su dueño de un mal que amenaza su vida — enfrentándose contra fuerzas superiores y tomando una decisión que lo cambiará todo.',
+   poster:'./PARALLAX — International Animation Festival_files/ronnie.jpg',
+   a:['Andrés Rosiles Maldonado', 'Carlos Alonso Serroque Palacios', 'Victoria Nohemí Peña Ceseña', 'Daniel García Díaz'],
+   crew:[
+    {name:'Andrés Rosiles Maldonado', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/andres-rosiles-maldonado.jpg'},
+    {name:'Carlos Alonso Serroque Palacios', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/carlos-alonso-serroque-palacios.jpg'},
+    {name:'Victoria Nohemí Peña Ceseña', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/victoria-nohemi-pena-cesena.jpg'},
+    {name:'Daniel García Díaz', role:'Animación', avatar:'./PARALLAX — International Animation Festival_files/daniel-garcia-diaz.jpg'}
+   ],
+   inv:29},
+  {id:'blockhead', b:'3D', t:'BLOCKHEAD',
+   duration:'4 min',
+   synopsis:'Una cruda estatua de madera cobra vida en una cabaña abandonada, y gradualmente descubre sus alrededores y sus habilidades.',
+   poster:'./PARALLAX — International Animation Festival_files/blockhead.jpg',
+   a:['Fernando Manuel Cárdenas Segura'],
+   crew:[
+    {name:'Fernando Manuel Cárdenas Segura', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/fernando-manuel-cardenas-segura.jpg'}
+   ],
+   inv:5},
+  {id:'contact', b:'3D', t:'CONTACT',
+   duration:'6 min',
+   synopsis:'Décadas después de que un rover soviético captara brevemente algo extraordinario en Marte, una misión secreta es enviada para descubrir la verdad — solo para despertar una fuerza olvidada que nunca debió ser encontrada.',
+   poster:'./PARALLAX — International Animation Festival_files/contact.jpg',
+   a:['Gonzalo Ramos Ochoa'],
+   crew:[
+    {name:'Gonzalo Ramos Ochoa', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/gonzalo-ramos-ochoa.jpg'}
+   ],
+   inv:5},
+  {id:'escamas', b:'3D', t:'ESCAMAS',
+   duration:'7 min',
+   synopsis:'En una pequeña cabaña en la Antártida, Roberto, un investigador raro y solitario, adopta a Pez, un pez anaranjado con cualidades extrañas que llevarán a Roberto a tomar decisiones extremas.',
+   poster:'./PARALLAX — International Animation Festival_files/escamas.jpg',
+   a:['Julieta Hernández Sada', 'Jessica Córdova', 'Sofía Téllez', 'Andrea Zamarripa', 'Andrea Ortegón', 'Raul Carrillo', 'Jorge Urencio'],
+   crew:[
+    {name:'Julieta Hernández Sada', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/julieta-hernandez-sada.jpg'}
+   ],
+   inv:50},
+  {id:'ineedspace', b:'3D', t:'I Need Some Space',
+   duration:'6 min',
+   synopsis:'Malai, una alienígena que vive en un planeta solitario que conoce a la perfección. Su planeta, su rutina y el objeto más preciado que resguarda le dan estabilidad y sentido. Pero todo cambia cuando Olivia irrumpe accidentalmente en su órbita y destruye aquello que Malai más atesora: su flor.',
+   poster:'./PARALLAX — International Animation Festival_files/i-need-some-space.jpg',
+   a:['Angela Aguirre', 'Mariana Córdova', 'Luisa Treviño', 'Serydia Cortez'],
+   crew:[
+    {name:'Angela Aguirre', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/angela-aguirre.jpg'}
+   ],
+   inv:18},
+  {id:'lonestar', b:'3D', t:'Lone Star Store',
+   duration:'10 min',
+   synopsis:'Cade, un chico que cubre el turno nocturno por su amigo, enfrentará un encuentro extraño durante la noche que lo llevará a la decisión de abandonar o quedarse en la tienda.',
+   poster:'./PARALLAX — International Animation Festival_files/lone-star-store.jpg',
+   a:['Elizabeth Abigail Aguirre Calderón', 'Carlos García H.', 'María Casillas'],
+   crew:[
+    {name:'Elizabeth Abigail Aguirre Calderón', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/elizabeth-abigail-aguirre-calderon.jpg'}
+   ],
+   inv:13},
+  {id:'recuerda', b:'3D', t:'Recuerda que te amo',
+   duration:'6 min',
+   synopsis:'En los 80\'s, Sandy es una enfermera que cuida de Meli, una señora con Alzheimer que vive entre recuerdos de los 50\'s y el presente. Sandy vive en la casa de Meli para acompañarla en su vida cotidiana y se esfuerza para convivir mejor con ella.',
+   poster:'./PARALLAX — International Animation Festival_files/recuerda-que-te-amo.jpg',
+   a:['Isabella Guadalupe Puente Cantú', 'Emma Saucedo', 'Lesly Gómez', 'Ana Velázquez', 'Carlos Cantú'],
+   crew:[
+    {name:'Isabella Guadalupe Puente Cantú', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/isabella-guadalupe-puente-cantu.jpg'}
+   ],
+   inv:31},
+  {id:'rex', b:'3D', t:'Rex',
+   duration:'13 min',
+   synopsis:'REX, el depredador más temido del cretácico, recibe recuerdos de su pasado que lo marcaron para siempre — aquellos recuerdos que desearía olvidar por completo.',
+   poster:'./PARALLAX — International Animation Festival_files/rex.jpg',
+   a:['Ángel Iván Torres Arévalo', 'Emilio García', 'Mariano Mosqueda'],
+   crew:[
+    {name:'Ángel Iván Torres Arévalo', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/angel-ivan-torres-arevalo.jpg'}
+   ],
+   inv:14},
+  {id:'ungiro', b:'3D', t:'Un giro bajo el agua',
+   duration:'6 min',
+   synopsis:'En un bosque tranquilo, un pequeño gatito hambriento sale en busca de comida junto al río, creyendo que será una tarea sencilla. Pero mientras sigue el aroma de unos peces, descubrirá un mundo salvaje lleno de peligros, criaturas inesperadas y decisiones que pondrán a prueba su valentía… incluso arriesgando su propia vida para regresar a casa.',
+   poster:'./PARALLAX — International Animation Festival_files/un-giro-en-el-agua.jpg',
+   a:['Padme Aaralyn Dominguez Gurrola'],
+   crew:[
+    {name:'Padme Aaralyn Dominguez Gurrola', role:'Dirección', avatar:'./PARALLAX — International Animation Festival_files/padme-aaralyn-dominguez-gurrola.jpg'}
+   ],
+   inv:0},
 ];
 const F2 = FILMS.filter(f=>f.b==='2D');
 const F3 = FILMS.filter(f=>f.b==='3D');
@@ -1406,6 +1576,7 @@ function filmCard(f) {
   return `<div class="fcard${s==='wn'?' sw':s==='er'?' sf':''}">
     <div class="fcard-stripe ${strpCss}"></div>
     <div class="fcard-body">
+      ${f.poster ? `<div class="fcard-poster" style="height:110px;overflow:hidden;margin:-16px -14px 12px;border-radius:var(--r-lg) var(--r-lg) 0 0;position:relative;background:var(--bg3)"><img src="${f.poster}" alt="${f.t}" loading="lazy" style="width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s" onload="this.style.opacity=1"><div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,var(--bg2));pointer-events:none"></div></div>` : ''}
       <div class="fcard-top">
         <span class="blq-pill ${blqCss}">${f.b}</span>
         <span class="st-pill ${scss}">${slab}</span>
@@ -1665,7 +1836,26 @@ function openModal(id) {
   tag.textContent = 'Bloque ' + f.b + ' · Animación';
   tag.className = 'modal-blq-tag ' + (is2d ? 'blk-tag-2d' : 'blk-tag-3d');
   document.getElementById('m-title').textContent = f.t;
-  document.getElementById('m-meta').textContent = f.a.length + ' alumno' + (f.a.length!==1?'s':'') + ' · ' + f.inv + ' invitados registrados';
+  document.getElementById('m-meta').textContent =
+    (f.duration ? f.duration + ' · ' : '') +
+    f.a.length + ' alumno' + (f.a.length!==1?'s':'') + ' · ' + f.inv + ' invitados registrados';
+  /* Poster */
+  const mPoster = document.getElementById('m-poster');
+  if(mPoster) { mPoster.src = f.poster||''; mPoster.style.display = f.poster ? 'block' : 'none'; }
+  /* Synopsis */
+  const mSyn = document.getElementById('m-synopsis');
+  if(mSyn) { mSyn.textContent = f.synopsis||''; mSyn.style.display = f.synopsis ? 'block' : 'none'; }
+  /* Crew with photos */
+  const mCrew = document.getElementById('m-crew');
+  if(mCrew && f.crew && f.crew.length) {
+    mCrew.innerHTML = f.crew.map(c =>
+      '<div class="m-crew-item">' +
+      (c.avatar ? '<img class="m-crew-avatar" src="'+c.avatar+'" alt="'+c.name+'" loading="lazy" onerror="this.style.opacity=0">' : '<div class="m-crew-avatar-placeholder">'+c.name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase()+'</div>') +
+      '<div><div class="m-crew-name">'+c.name+'</div><div class="m-crew-role">'+c.role+'</div></div>' +
+      '</div>'
+    ).join('');
+    mCrew.style.display = 'flex';
+  } else if(mCrew) { mCrew.style.display = 'none'; }
   updModalCap();
   renderModalAlumnos('');
   document.getElementById('modal-overlay').classList.add('open');
