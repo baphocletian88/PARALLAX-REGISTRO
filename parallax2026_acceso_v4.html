@@ -2220,7 +2220,9 @@ const QR_FB_CFG = {
 function qrSaveRegistry() {
   try {
     if(typeof firebase === 'undefined') return;
-    const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(QR_FB_CFG);
+    /* Use already-initialized Firebase app — never re-init */
+    if(!firebase.apps.length) { console.warn("QR registry: Firebase not ready"); return; }
+    const app = firebase.app();
     const db = app.database();
     const base = qrBaseUrl();
     const registry = {};
@@ -2249,10 +2251,9 @@ function qrTryInit() {
   if(typeof window.QrCreator !== 'undefined') {
     setTimeout(() => { qrRegenAll(); qrSaveRegistry(); }, 100);
   } else {
-    setTimeout(tryInit, 150);
+    setTimeout(qrTryInit, 150);
   }
 }
-qrTryInit();
 
 })();
 </script>
