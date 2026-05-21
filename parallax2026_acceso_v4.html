@@ -1199,22 +1199,60 @@ let srch = {'2d':'','3d':''};
 
 /* ══ FIREBASE ════════════════════════════════════════ */
 function init() {
+  /* Show shell immediately — don't wait for Firebase */
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('shell').style.display = 'flex';
+
+  /* Render with empty state right away so UI is never blank */
+  rAll();
+
+  /* Safety timeout: if Firebase hasn't fired after 6s, go demo */
+  let fbReady = false;
+  const fbTimeout = setTimeout(() => {
+    if(!fbReady) {
+      console.warn('Firebase timeout — switching to demo mode');
+      isDemo = true;
+      ss('err', 'Sin conexión');
+      rAll();
+    }
+  }, 6000);
+
   try {
     firebase.initializeApp(FB_CFG);
     db = firebase.database();
+
+    /* Connection state indicator */
     db.ref('.info/connected').on('value', s => {
-      const c = s.val(); ss(c ? 'live' : 'err', c ? 'En vivo' : 'Sin conexión');
+      const connected = s.val();
+      ss(connected ? 'live' : 'err', connected ? 'En vivo' : 'Reconectando…');
     });
-    db.ref('screenings').on('value', s => { SC = s.val() || {}; rAll(); });
-    db.ref('vip').on('value', s => { VS = s.val() || {}; rVIP(); rOv(); });
+
+    /* screenings — first event marks FB as ready */
+    db.ref('screenings').on('value', s => {
+      if(!fbReady) { fbReady = true; clearTimeout(fbTimeout); }
+      SC = s.val() || {};
+      rAll();
+    }, err => {
+      console.error('screenings listener error:', err);
+      if(!fbReady) { fbReady = true; clearTimeout(fbTimeout); isDemo = true; ss('err','Error DB'); rAll(); }
+    });
+
+    db.ref('vip').on('value', s => {
+      VS = s.val() || {};
+      rVIP(); rOv();
+    }, err => console.error('vip listener error:', err));
+
     db.ref('eventlog').limitToLast(100).on('value', s => {
-      LOG = []; s.forEach(c => LOG.push(c.val())); rLog(); rOvLog();
-    });
+      LOG = []; s.forEach(e => LOG.push(e.val())); rLog(); rOvLog();
+    }, err => console.error('eventlog listener error:', err));
+
   } catch(e) {
-    isDemo = true; ss('live', 'Demo local'); rAll();
+    clearTimeout(fbTimeout);
+    console.error('Firebase init error:', e);
+    isDemo = true;
+    ss('err', 'Demo local');
+    rAll();
   }
-  document.getElementById('loader').style.display = 'none';
-  document.getElementById('shell').style.display = 'flex';
 }
 
 function ss(state, txt) {
