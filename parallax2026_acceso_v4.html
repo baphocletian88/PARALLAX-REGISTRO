@@ -1568,24 +1568,28 @@ function rVIP() {
     const rows = gs.map((g, gi) => {
       const s = VS[g.id] || {in:false,comp:[],time:null};
       const isLast = gi===gs.length-1 && !g.comp;
-      return `<div class="grow${s.in?' in':''}" style="${isLast?'border-radius:0 0 var(--r-lg) var(--r-lg)':''}">
-        <div class="gavatar${s.in?' in':''}">${ini(g.name)}</div>
-        <div class="ginfo">
-          <div class="gname${s.in?' in':''}">${g.name}${g.comp?` <span style="font-size:10px;color:var(--t3)">+${g.comp}</span>`:''}</div>
-          <div class="${s.in?'gtime':'gmeta'}">${s.in?(s.time||'Ingresó'):'Pendiente de ingreso'}</div>
-        </div>
-        <button class="chk-btn ${s.in?'chk-in':'chk-out'}" onclick="togVip('${g.id}')">${s.in?'✓ Ingresó':'Registrar'}</button>
-        ${s.in ? \`<button class="chk-btn" style="font-size:9px;padding:5px 7px;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.25);color:var(--wn)" onclick="resetVip('${g.id}','${g.name}')" title="Liberar acceso">⟳</button>\` : ''}
-      </div>\` +
-      Array.from({length:g.comp},(_,ci) => {
+      const rstBtn = s.in
+        ? '<button class="chk-btn" style="font-size:9px;padding:5px 7px;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.25);color:var(--wn)" onclick="resetVip(\'' + g.id + '\',true)" title="Liberar acceso">⟳</button>'
+        : '';
+      const compRows = Array.from({length:g.comp},(_,ci) => {
         const cs = (s.comp||[])[ci] || {in:false};
         const compLast = ci===g.comp-1 && gi===gs.length-1;
-        return `<div class="crow${compLast?' clast':''}">
-          <div class="cdot${cs.in?' in':''}"></div>
-          <div class="cname${cs.in?' in':''}">Acompañante ${ci+1} — ${g.name.split(' ')[0]}</div>
-          <button class="chk-btn ${cs.in?'chk-in':'chk-out'}" style="font-size:9px;padding:4px 9px" onclick="togComp('${g.id}',${ci})">${cs.in?'✓':'Reg.'}</button>
-        </div>`;
+        return '<div class="crow' + (compLast?' clast':'') + '">'
+          + '<div class="cdot' + (cs.in?' in':'') + '"></div>'
+          + '<div class="cname' + (cs.in?' in':'') + '">Acompañante ' + (ci+1) + ' — ' + g.name.split(' ')[0] + '</div>'
+          + '<button class="chk-btn ' + (cs.in?'chk-in':'chk-out') + '" style="font-size:9px;padding:4px 9px" onclick="togComp(\'' + g.id + '\',' + ci + ')">' + (cs.in?'✓':'Reg.') + '</button>'
+          + '</div>';
       }).join('');
+      return '<div class="grow' + (s.in?' in':'') + '" style="' + (isLast?'border-radius:0 0 var(--r-lg) var(--r-lg)':'') + '">'
+        + '<div class="gavatar' + (s.in?' in':'') + '">' + ini(g.name) + '</div>'
+        + '<div class="ginfo">'
+        + '<div class="gname' + (s.in?' in':'') + '">' + g.name + (g.comp?'<span style="font-size:10px;color:var(--t3)">+' + g.comp + '</span>':'') + '</div>'
+        + '<div class="' + (s.in?'gtime':'gmeta') + '">' + (s.in?(s.time||'Ingresó'):'Pendiente de ingreso') + '</div>'
+        + '</div>'
+        + '<button class="chk-btn ' + (s.in?'chk-in':'chk-out') + '" onclick="togVip(\'' + g.id + '\')">' + (s.in?'✓ Ingresó':'Registrar') + '</button>'
+        + rstBtn
+        + '</div>'
+        + compRows;
     }).join('');
     return `<div class="org-block">
       <div class="org-hdr">
@@ -1951,7 +1955,9 @@ async function resetFilm(id) {
   }
 }
 
-async function resetVip(gid, name) {
+async function resetVip(gid, nameOrFlag) {
+  const g = VORGS.flatMap(o=>o.guests).find(x=>x.id===gid);
+  const name = (g && g.name) ? g.name : gid;
   if(!confirm('¿Liberar acceso de ' + name + '?\n\nEl QR podrá usarse nuevamente.')) return;
   try {
     if(!isDemo && db) {
