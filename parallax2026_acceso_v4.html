@@ -432,6 +432,7 @@ html, body {
 .tp-e { background: var(--a2db); color: #818CF8; border: 0.5px solid var(--a2dr); }
 .tp-m { background: var(--erb); color: #F87171; border: 0.5px solid var(--err); }
 .tp-u { background: var(--a3db); color: #34D399; border: 0.5px solid var(--a3dr); }
+.tp-s { background:rgba(251,191,36,.10);color:#FCD34D;border:0.5px solid rgba(251,191,36,.25); }
 .tp-i { background: var(--pub); color: var(--pu3); border: 0.5px solid var(--pur); }
 
 .grow {
@@ -1340,7 +1341,8 @@ const VORGS = [
    guests:[{id:'sl1',name:'Eduardo Morales',comp:0},{id:'sl2',name:'Catalina Alvarez',comp:0},{id:'sl3',name:'Erika López',comp:0},{id:'sl4',name:'Araceli Mendivil',comp:0},{id:'sl5',name:'Mauricio Alvarez Sanchez',comp:0},{id:'sl6',name:'Miguel Ángel Aguilera',comp:0},{id:'sl7',name:'Caterina Aquino',comp:0}]},
   {id:'hb', name:'Hey Banco',         type:'empresa', guests:[{id:'hb1',name:'Fedro Ceballos',comp:0}]},
   {id:'kw', name:'Keywords Studio',   type:'empresa', guests:[{id:'kw1',name:'Alejandra Meza',comp:1}]},
-  {id:'pp', name:'Pixel Perfect',     type:'empresa', guests:[{id:'pp1',name:'Angel Hernandez',comp:0},{id:'pp2',name:'Rodrigo Garcia',comp:0}]},
+  {id:'pp', name:'Pixel Perfect',     type:'empresa', guests:[{id:'pp1',name:'Angel Hernandez',comp:0}]},
+  {id:'pm', name:'Picante Miniatures', type:'estudio', guests:[{id:'pp2',name:'Rodrigo Garcia',comp:0}]},
   {id:'mm', name:'MIMEC',             type:'empresa', guests:[{id:'mm1',name:'David Davila',comp:0},{id:'mm2',name:'Mariana Ortiz',comp:0}]},
   {id:'ar', name:'Armass Productions',type:'empresa', guests:[{id:'ar1',name:'Rubi Armass',comp:0}]},
   {id:'in', name:'Invitados Independientes', type:'indie', guests:[{id:'in1',name:'Leo Marz',comp:2},{id:'in2',name:'Angel Corona',comp:0},{id:'in4',name:'Alex Treviño',comp:1}]},
@@ -1356,8 +1358,8 @@ const VORGS = [
     {id:'ud16',name:'Angel Martinez',comp:1},{id:'ud18',name:'Mariana Baidon',comp:0},
     {id:'ud19',name:'Osmar Garduño',comp:0},{id:'ud20',name:'Abril Garza',comp:0},{id:'ud22',name:'Jair Salazar',comp:0},{id:'in3',name:'Nohemi Gamboa',comp:0},{id:'in5',name:'Karla Moya',comp:1},{id:'in6',name:'Ana Valeria Cantú',comp:0},{id:'in7',name:'Lizbeth Lozano',comp:0}]},
 ];
-const TLAB = {festival:'Festival',empresa:'Empresa',media:'Media',udem:'UDEM',indie:'Independiente'};
-const TCSS  = {festival:'tp-f',empresa:'tp-e',media:'tp-m',udem:'tp-u',indie:'tp-i'};
+const TLAB = {festival:'Festival',empresa:'Empresa',media:'Media',udem:'UDEM',indie:'Independiente',estudio:'Estudio'};
+const TCSS  = {festival:'tp-f',empresa:'tp-e',media:'tp-m',udem:'tp-u',indie:'tp-i',estudio:'tp-s'};
 
 /* ══ STATE ═══════════════════════════════════════════ */
 let SC = {}, VS = {}, LOG = [];
